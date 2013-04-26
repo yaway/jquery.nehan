@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>jquery.nehan.js demo</title>
+    <meta content="ja" name="content-language">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Style-Type" content="text/css">
+    <meta http-equiv="Content-Script-Type" content="text/javascript">
+    <link rel="stylesheet" type="text/css" href="nehan.css" />
+    <link rel="stylesheet" type="text/css" href="jquery.nehan.css" />
+    <link href="prettify.css" rel="stylesheet" type="text/css" />
+    <style type="text/css">
+      body{
+        font-family:'Meiryo','メイリオ', 'Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック',sans-serif;
+        margin:2em 3em;
+      }
+      .content{ width: 980px; margin 0 auto; }
+      .generated-result{ float:left; width: 520px; margin-right:20px; }
+      .sample-code{ float:left; width: 420px; }
+      .clearfix{ clear:both; }
+      .nehan-target{ display:none; }
+      .prettyprinted{ border:1px solid #ccc; padding:0.5em !important; border-radius:5px; }
+    </style>
+    <script type="text/javascript" src="nehan.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="jquery.nehan.js"></script>
+    <script type="text/javascript" language="javascript" src="prettify.js"></script>
+    <script type="text/javascript" language="javascript" src="lang-css.js"></script>
+    <script type="text/javascript">
+      $(function(){
+         $(".1x1-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+
+         $(".1x1-hori-progress").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-prev", "right-next"]
+});
+
+         $(".1x2-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+
+         $(".2x1-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:420,
+  fontSize:16,
+  rowCount:2,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+
+         $(".1x2-hori-progress").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-prev", "right-next"]
+});
+
+         $(".1x1-vert-indicator").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-next", "indicator", "right-prev"]
+});
+
+
+         $(".1x1-hori-indicator").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-prev", "indicator", "right-next"]
+});
+
+         $(".2x2-vert-progress").nehan({
+  direction:"vert",
+  width:450,
+  height:500,
+  fontSize:16,
+  rowCount:2,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+
+         $(".2x2-vert-indicator").nehan({
+  direction:"vert",
+  width:450,
+  height:500,
+  fontSize:16,
+  rowCount:2,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-next", "indicator", "right-prev"]
+});
+
+
+      });
+    </script>
+  </head>
+  <body onload="prettyPrint()">
+    <div class="content">
+
+      <h1>jquery.nehan demo</h1>
+
+      <h2>1x1 vertical rl (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="1x1-vert-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x1-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>1x1 horizontal lr (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="1x1-hori-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x1-hori-progress").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-prev", "right-next"]
+});
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>1x2 vertical rl (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="1x2-vert-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x2-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>1x2 horizontal lr (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="1x2-hori-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x2-hori-progress").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-prev", "right-next"]
+});
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>2x1 vertical rl (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="2x1-vert-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".2x1-vert-progress").nehan({
+  direction:"vert",
+  width:400,
+  height:420,
+  fontSize:16,
+  rowCount:2,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>1x1 vertical rl (indicator version)</h2>
+      <div class="generated-result">
+	<div class="1x1-vert-indicator">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x1-vert-indicator").nehan({
+  direction:"vert",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-next", "indicator", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>1x1 horizontal lr (indicator version)</h2>
+      <div class="generated-result">
+	<div class="1x1-hori-indicator">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".1x1-hori-indicator").nehan({
+  direction:"hori",
+  width:400,
+  height:300,
+  fontSize:16,
+  rowCount:1,
+  colCount:1,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-prev", "indicator", "right-next"]
+});
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>2x2 vertical rl (progress bar version)</h2>
+      <div class="generated-result">
+	<div class="2x2-vert-progress">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".2x2-vert-progress").nehan({
+  direction:"vert",
+  width:450,
+  height:500,
+  fontSize:16,
+  rowCount:2,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["progress", "left-next", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+
+      <h2>2x2 vertical rl (indicator version)</h2>
+      <div class="generated-result">
+	<div class="2x2-vert-indicator">
+	  <h3>ブロック要素の回り込み</h3>
+<p><img src="128x128.gif" width='100' height='100' class="nehan-ba-start">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この<b>憲法</b>を確定する。
+  <img src="128x128.gif" width='100' height='100' class="nehan-ba-end">
+  日本国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された国会における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって<dot>自由</dot>のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保する。</p>
+<hr class="nehan-space" />
+
+<h3>テーブルのページ送り</h3>
+<table>
+  <thead>
+    <tr><th>head1</th><th>head2</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><ruby>日本<rt>にほん</rt></ruby>国民は正当に<ruby>選挙<rt>せんきょ</rt></ruby>された<ruby>国会<rt>こっかい</rt></ruby>における代表者を通じて行動し、われらとわれらの<ruby><rb>子孫</rb><rt>しそん</rt></ruby>のために、諸国民との協和による成果と、わが国全土にわたって自由のもたらす<ruby><rb>恵沢</rb><rt>けいたく</rt></ruby>を確保し、政府の行為によって再び<ruby><rb>戦争</rb><rt>せんそう</rt></ruby>の<ruby><rb>惨禍</rb><rt>さんか</rt></ruby>が起ることのないやうにすることを決意し、ここに<ruby><rb>主権</rb><rt>しゅけん</rt></ruby>が国民に存することを宣言し、この憲法を確定する。</td><td>body2</td></tr>
+  </tbody>
+  <tr><td>body3</td><td>body4</td></tr>
+  <tr><td>body5</td><td>body6</td></tr>
+  <tr><td>body7</td><td>body8</td></tr>
+  <tfoot>
+    <tr><td>foot1</td><td>foot2</td></tr>
+  </tfoot>
+</table>
+<hr class="nehan-space" />
+<h3>リスト</h3>
+<h4>順序なしリスト</h4>
+<ul>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ul>
+<hr class="nehan-space" />
+
+<h4>順序リスト</h4>
+<ol>
+  <li>あいうえおあいうえおあいうえおあいうえおあいうえお</li>
+  <li>かきくけこかきくけこかきくけこかきくけこかきくけこ</li>
+  <li>さしすせそさしすせそさしすせそさしすせそさしすせそ</li>
+</ol>
+<hr class="nehan-space" />
+
+<h4>定義リスト</h4>
+<dl>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+  <dt>見出しテキスト</dt>
+  <dd>詳細テキスト詳細テキスト詳細テキスト詳細テキスト詳細テキスト</dd>
+</dl>
+<hr class="nehan-space" />
+
+<h3>アルファベット</h3>
+<p>abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+	</div>
+      </div>
+      <div class="sample-code">
+	<pre class="prettyprint"><code class="language-js">$(".2x2-vert-indicator").nehan({
+  direction:"vert",
+  width:450,
+  height:500,
+  fontSize:16,
+  rowCount:2,
+  colCount:2,
+  spacingSize:16,
+  readerElements:["screen", "pager"],
+  pagerElements:["left-next", "indicator", "right-prev"]
+});
+
+</code></pre>
+      </div>
+      <div class="clearfix"></div>
+    </div>
+  </body>
+</html>
