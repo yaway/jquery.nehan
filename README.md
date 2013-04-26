@@ -2,7 +2,7 @@
 
 ## Instroduction
 
-jquery.nehan is jquery plugin for nehan layout engine, to create paging reader app easily.
+jquery.nehan is jquery plugin for [nehan.js](https://github.com/tategakibunko/nehan.js), to create reader of paged-media easily.
 
 ## Build
 
