@@ -51,7 +51,7 @@ to make jquery.nehan.min.js
 
 ## More Info
 
-[jquery.nehan tutorial](http://tategakibunko.mydns.jp/docs/jquery.nehan).
+[jquery.nehan tutorial](http://tategakibunko.mydns.jp/docs/nehan/jquery.nehan).
 
 ## License
 
