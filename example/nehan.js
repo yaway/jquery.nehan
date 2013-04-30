@@ -424,13 +424,6 @@ var Style = {
     "child-content":true,
     "section":true
   },
-  /*
-  "hgroup":{
-    "display":"block",
-    "child-content":true,
-    "section":true
-  },
-  */
   "hr":{
     "display":"block",
     "single":true,
@@ -507,6 +500,10 @@ var Style = {
   //-------------------------------------------------------
   // tag / m
   //-------------------------------------------------------
+  "main":{
+    "display":"block",
+    "child-content":true
+  },
   "map":{
   },
   "mark":{
@@ -1045,25 +1042,6 @@ var Style = {
   },
   ".nehan-jisage":{
     "text-indent":"1em" // same as '.nehan-ti-1em'
-  },
-  //-------------------------------------------------------
-  // utility functions
-  //-------------------------------------------------------
-  isEnable : function(name, prop){
-    var element = this[name] || null;
-    return element? (element[prop] || false) : false;
-  },
-  isSingleTag : function(name){
-    return this.isEnable(name, "single");
-  },
-  isChildContentTag : function(name){
-    return this.isEnable(name, "child-content");
-  },
-  isSectionTag : function(name){
-    return this.isEnable(name, "section");
-  },
-  isSectionRootTag : function(name){
-    return this.isEnable(name, "section-root");
   }
 };
 
@@ -1524,8 +1502,8 @@ var Tag = (function (){
     this.dataset = {};
     this.tagAttr = this._parseTagAttr(this.src);
     this.classes = this._parseClasses();
-    this.cssKeys = this._parseCssKeys(this.classes);
-    this.cssAttrStatic = this._parseCssAttrStatic(this.cssKeys);
+    this.selectors = get_enable_selectors(this._parseSelectors(this.classes));
+    this.cssAttrStatic = this._parseCssAttrStatic(this.selectors);
     this.parent = null;
     this.content = this._parseContent(content || "");
   }
@@ -1534,6 +1512,39 @@ var Tag = (function (){
   var rex_nv_attr = /(?:\S+)=["']?(?:(?:.(?!["']?\s+(?:\S+)=|["']))+.)["']?/g;
   var rex_first_letter = /(^(<[^>]+>|[\s\n])*)(\S)/mi;
   
+  // utility functions
+  var is_style_enable = function(name, prop){
+    var element = Style[name] || null;
+    return element? (element[prop] || false) : false;
+  };
+
+  var is_single_tag = function(name){
+    return is_style_enable(name, "single");
+  };
+
+  var is_child_content_tag = function(name){
+    return is_style_enable(name, "child-content");
+  };
+
+  var is_section_tag = function(name){
+    return is_style_enable(name, "section");
+  };
+
+  var is_section_root_tag = function(name){
+    return is_style_enable(name, "section-root");
+  };
+
+  var get_enable_selectors = function(keys){
+    return List.filter(keys, function(key){
+      for(var prop in Style){
+	if(prop.indexOf(key) >= 0){
+	  return true;
+	}
+      }
+      return false;
+    });
+  };
+
   Tag.prototype = {
     // copy parent settings in 'markup' level
     inherit : function(parent_tag){
@@ -1548,9 +1559,11 @@ var Tag = (function (){
 	}
       });
       if(parent_tag.getName() != "body"){
-	this.cssKeys = this._getContextualCssKeys(this.cssKeys, parent_tag);
-	List.iter(this.cssKeys, function(ctx_key){
-	  Args.copy(self.cssAttrStatic, Style[ctx_key] || {});
+	var parent_selectors = parent_tag.getSelectors();
+	var ctx_selectors = this._parseContextSelectors(this.selectors, parent_selectors);
+	this.selectors = get_enable_selectors(ctx_selectors);
+	List.iter(this.selectors, function(key){
+	  Args.copy(self.cssAttrStatic, Style[key]);
 	});
       }
       this._inherited = true;
@@ -1610,11 +1623,6 @@ var Tag = (function (){
       this.iterCssAttr(fn);
       this.iterTagAttr(fn); // inline attrs prior to css attrs.
     },
-    // if vertical document, advance is height,
-    // if horizontal document, advance is width
-    getAdvance : function(flow){
-      return this.tagAttr[flow.getPropMeasure()] || 0;
-    },
     getName : function(){
       return this.name;
     },
@@ -1627,8 +1635,8 @@ var Tag = (function (){
     getAttr : function(name, def_value){
       return this.getTagAttr(name) || this.getCssAttr(name) || def_value || null;
     },
-    getCssKeys : function(){
-      return this.cssKeys;
+    getSelectors : function(){
+      return this.selectors;
     },
     getCssClasses : function(){
       return this.classes.join(" ");
@@ -1737,7 +1745,7 @@ var Tag = (function (){
       return (typeof this.tagAttr.pull != "undefined");
     },
     isOpen : function(){
-      if(this.isSingleTag()){
+      if(is_single_tag()){
 	return false;
       }
       return this.name.substring(0,1) !== "/";
@@ -1774,22 +1782,22 @@ var Tag = (function (){
       return this.getCssAttr("display", "inline") === "inline-block";
     },
     isSingleTag : function(){
-      return Style.isSingleTag(this.getName());
+      return is_single_tag(this.getName());
     },
     isChildContentTag : function(){
       if(this.isSingleTag()){
 	return false;
       }
-      return Style.isChildContentTag(this.getName());
+      return is_child_content_tag(this.getName());
     },
     isTcyTag : function(){
       return this.getCssAttr("text-combine", "") === "horizontal";
     },
     isSectionRootTag : function(){
-      return Style.isSectionRootTag(this.getName());
+      return is_section_root_tag(this.getName());
     },
     isSectionTag : function(){
-      return Style.isSectionTag(this.getName());
+      return is_section_tag(this.getName());
     },
     isBoldTag : function(){
       var name = this.getName();
@@ -1803,15 +1811,6 @@ var Tag = (function (){
     isPageBreakTag : function(){
       var name = this.getName();
       return name === "end-page" || name === "page-break";
-    },
-    // get '2 level' contextual selector(so parent of parent_tag is ignored).
-    // this restriction is for performance.
-    _getContextualCssKeys : function(css_keys, parent_tag){
-      return List.fold(parent_tag.getCssKeys(), [], function(ret1, parent_key){
-	return ret1.concat(List.fold(css_keys, [], function(ret2, child_key){
-	  return ret2.concat([parent_key + " " + child_key]);
-	}));
-      }).concat(css_keys);
     },
     _preprocess : function(src){
       return src.replace(/\s*=\s*/g, "=");
@@ -1850,9 +1849,20 @@ var Tag = (function (){
     },
     // <p class='hi hey'>
     // => ["p", ".hi", ".hey", "p.hi", "p.hey"]
-    _parseCssKeys : function(classes){
+    _parseSelectors : function(classes){
       var tag_name = this.getName();
       return [tag_name].concat(this._parseCssClassesAll(tag_name, classes));
+    },
+    // get contextual selector(so parent of parent_tag is ignored).
+    // if parent_keys are ["div", "div.hoge"]
+    // and child_keys are ["p", "p.hige"]
+    // => ["p", "p.hige", "div p", "div.hoge p", "div.hoge p", "div.hoge p.hige"]
+    _parseContextSelectors : function(selectors, parent_selectors){
+      return selectors.concat(List.fold(parent_selectors, [], function(ret1, parent_key){
+	return ret1.concat(List.fold(selectors, [], function(ret2, child_key){
+	  return ret2.concat([parent_key + " " + child_key]);
+	}));
+      }));
     },
     // Style["div"].border = "1px"
     // => {border:"1px"}
@@ -1864,10 +1874,10 @@ var Tag = (function (){
       return attr;
     },
     // if pseudo_name is "before",
-    // and this.cssKeys is ["p", "p.hoge"]
+    // and this.selectors is ["p", "p.hoge"]
     // => ["p:before", "p.hoge:before"]
-    _parsePseudoCssKeys : function(pseudo_name){
-      return List.map(this.cssKeys, function(key){
+    _parsePseudoSelectors : function(pseudo_name){
+      return List.map(this.selectors, function(key){
 	return key + ":" + pseudo_name;
       });
     },
@@ -1876,8 +1886,8 @@ var Tag = (function (){
     // => {border:"1px"}
     _parsePseudoStyle : function(pseudo_name){
       var attr = {};
-      var pseudo_css_keys = this._parsePseudoCssKeys(pseudo_name);
-      List.iter(pseudo_css_keys, function(pseudo_key){
+      var pseudo_selectors = this._parsePseudoSelectors(pseudo_name);
+      List.iter(pseudo_selectors, function(pseudo_key){
 	Args.copy(attr, Style[pseudo_key] || {});
       });
       return attr;
@@ -3916,7 +3926,8 @@ var Box = (function(){
       var space = Layout.fontSize; // this is space for tail NG.
 
       // if marker or :first-letter(pseudo-element), tail space is zero.
-      if(this._type === "li-marker" || this._type === ":first-letter"){
+      if(this._type === "li-marker" ||
+	 this._type === ":first-letter"){
 	return Math.max(space, measure);
       }
       return Math.max(space, measure - space);
@@ -5827,8 +5838,6 @@ var TableTagStream = FilteredTagStream.extend({
     if(len > 0){
       target.firstChild = childs[0];
       target.lastChild = childs[len - 1];
-      childs[0].isFirstChild = true;
-      childs[len - 1].isLastChild = true;
     }
     return target;
   },
@@ -6164,7 +6173,6 @@ var BlockGenerator = Class.extend({
   init : function(markup, context){
     this.markup = markup;
     this.context = context;
-    this._getPageBreakBefore();
   },
   hasNext : function(){
     return false;
@@ -6186,12 +6194,7 @@ var BlockGenerator = Class.extend({
   _onReadyBox : function(box, parent){
   },
   // called when box is created, and std style is already loaded.
-  _onCompleteBox : function(box, parent){
-  },
-  _getPageBreakBefore : function(){
-    if(this.markup.getCssAttr("page-break-before", "") === "always"){
-      this.pageBreakBefore = true; // let this generator yield PAGE_BREAK exception(only once).
-    }
+  _onCreateBox : function(box, parent){
   },
   _getBoxType : function(){
     return this.markup.getName();
@@ -6300,7 +6303,7 @@ var BlockGenerator = Class.extend({
     var box = Layout.createBox(size, parent, box_type);
     this._onReadyBox(box, parent);
     this._setBoxStyle(box, parent);
-    this._onCompleteBox(box, parent);
+    this._onCreateBox(box, parent);
     return box;
   }
 });
@@ -6355,14 +6358,14 @@ var InlineBoxGenerator = StaticBlockGenerator.extend({
   _getBoxContent : function(){
     return this.markup.isChildContentTag()? this.markup.getWrapSrc() : this.markup.getSrc();
   },
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     box.content = this._getBoxContent();
     box.css.overflow = "hidden";
   }
 });
 
 var ImageGenerator = StaticBlockGenerator.extend({
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     box.src = this.markup.getTagAttr("src");
   }
 });
@@ -6376,8 +6379,9 @@ var HorizontalRuleGenerator = StaticBlockGenerator.extend({
 });
 
 var RubyGenerator = (function(){
-  function RubyGenerator(content){
-    this.stream = new RubyStream(content);
+  function RubyGenerator(markup){
+    this.markup = markup;
+    this.stream = new RubyStream(markup.content);
   }
 
   RubyGenerator.prototype = {
@@ -6401,7 +6405,7 @@ var RubyGenerator = (function(){
 
       // avoid overwriting metrics.
       if(!ruby.hasMetrics()){
-	ruby.setMetrics(ctx.getParentFlow(), ctx.getInlineFontSize(), ctx.letterSpacing);
+	ruby.setMetrics(ctx.getParentFlow(), this.markup.fontSize, this.markup.letterSpacing);
       }
       return ruby;
     }
@@ -6889,8 +6893,7 @@ var InlineGenerator = (function(){
 	  ctx.setLineBreak();
 	  break;
 	} else if(element == SKIP){
-	  ctx.setLineBreak();
-	  break;
+	  return IGNORE;
 	} else if(element == LINE_BREAK){
 	  ctx.setLineBreak();
 	  break;
@@ -6991,7 +6994,7 @@ var InlineGenerator = (function(){
       if(token.isBlock()){
 	ctx.pushBackToken(); // push back this token(this block is handled by parent generator).
 	this._hasNext = false; // force terminate
-	return LINE_BREAK;
+	return ctx.isEmptyText()? SKIP : LINE_BREAK;
       }
       // token is static size tag
       if(token.hasStaticSize()){
@@ -7034,7 +7037,12 @@ var InlineGenerator = (function(){
 	return IGNORE;
 
       case "ruby":
-	this.generator = new RubyGenerator(tag.content);
+	// assert metrics only once to avoid dup update by rollback
+	if(typeof tag.fontSize === "undefined"){
+	  tag.fontSize = ctx.getInlineFontSize();
+	  tag.letterSpacing = ctx.letterSpacing;
+	}
+	this.generator = new RubyGenerator(tag);
 	return this.generator.yield(ctx);
 
       case "a":
@@ -7092,6 +7100,7 @@ var PageGenerator = BlockGenerator.extend({
     this.rollbackCount = 0;
     this.stream = this._createStream();
     this.localPageNo = 0;
+    this.pageBreakBefore = this._isPageBreakBefore();
   },
   hasNext : function(){
     if(this.generator && this.generator.hasNext()){
@@ -7119,11 +7128,13 @@ var PageGenerator = BlockGenerator.extend({
     if(this.stream.isEmpty()){
       return Exceptions.SKIP;
     }
-    if(this.pageBreakBefore){ // before page-break flag is enabled.
+    // let this generator yield PAGE_BREAK exception(only once).
+    if(this.pageBreakBefore){
       this.pageBreakBefore = false;
       return Exceptions.PAGE_BREAK;
     }
     this.context.pushBlock(this.markup);
+
     var page_box, page_size;
     page_size = size || (parent? parent.getRestSize() : null);
     page_box = this._createBox(page_size, parent);
@@ -7135,6 +7146,7 @@ var PageGenerator = BlockGenerator.extend({
   _yieldPageTo : function(page){
     var cur_extent = 0;
     var max_extent = page.getContentExtent();
+    var page_flow = page.flow;
 
     while(true){
       this.backup();
@@ -7153,13 +7165,14 @@ var PageGenerator = BlockGenerator.extend({
       } else if(element == Exceptions.IGNORE){
 	continue;
       }
-      var extent = element.getBoxExtent(page.flow);
+      var extent = element.getBoxExtent(page_flow);
       cur_extent += extent;
-      if(cur_extent > max_extent || this._isEmptyElement(page.flow, element)){
+      if(cur_extent > max_extent || this._isEmptyElement(page_flow, element)){
 	this.rollback();
 	break;
       }
       page.addChild(element);
+
       if(cur_extent == max_extent){
 	break;
       }
@@ -7184,6 +7197,9 @@ var PageGenerator = BlockGenerator.extend({
       this.localPageNo++;
     }
     return page;
+  },
+  _isPageBreakBefore : function(){
+    return this.markup.getCssAttr("page-break-before", "") === "always";
   },
   _isEmptyElement : function(flow, element){
     return (element instanceof Box) && (element.getContentExtent(flow) <= 0);
@@ -7356,7 +7372,7 @@ var InlineBlockGenerator = PageGenerator.extend({
   },
   // ctx : LineContext
   yield : function(ctx){
-    var rest_measure = ctx.getRestMeasure();
+    var rest_measure = ctx.restMeasure;
     var rest_extent = ctx.restExtent;
     var parent_flow = ctx.getParentFlow();
     var size = parent_flow.getBoxSize(rest_measure, rest_extent);
@@ -7420,7 +7436,7 @@ var HeaderGenerator = ChildPageGenerator.extend({
     this._super(page);
     page.id = Css.addNehanHeaderPrefix(this.context.logSectionHeader(this.markup));
   },
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     box.addClass("nehan-header");
   }
 });
@@ -7530,11 +7546,12 @@ var InlinePageGenerator = PageGenerator.extend({
     return false;
   },
   yield : function(parent, size){
-    var wrap = Layout.createBox(size, parent, "ipage");
-    var page = this._super(wrap); // yield page to wrap.
-    wrap.addChild(page);
-    wrap.blockAlign = page.blockAlign;
-    return wrap;
+    var box_type = this._getBoxType();
+    var box = Layout.createBox(size, parent, box_type);
+    this._onReadyBox(box);
+    this._setBoxStyle(box, parent);
+    this._onCreateBox(box, parent);
+    return this._yieldPageTo(box);
   }
 });
 
@@ -7637,13 +7654,13 @@ var TableGenerator = ChildPageGenerator.extend({
       }
     }
   },
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     box.partition = this.stream.getPartition(box);
   }
 });
 
 var TableRowGroupGenerator = ChildPageGenerator.extend({
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     box.partition = parent.partition;
   },
   _createStream : function(){
@@ -7662,7 +7679,7 @@ var TableRowGenerator = ParallelPageGenerator.extend({
 });
 
 var ListGenerator = ChildPageGenerator.extend({
-  _onCompleteBox : function(box, parent){
+  _onCreateBox : function(box, parent){
     var item_count = this.stream.getTokenCount();
     var list_style_type = this.markup.getCssAttr("list-style-type", "none");
     var list_style_pos = this.markup.getCssAttr("list-style-position", "outside");
