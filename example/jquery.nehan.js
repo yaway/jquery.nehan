@@ -254,7 +254,7 @@ var ReaderStatus = (function(){
     this.vertMode = args.vert || "tb-rl";
     this.isVert = args.direction.indexOf("vert") >= 0;
     this.readerElements = args.readerElements || ["screen", "pager"];
-    this.pagerElements = args.pagerElements || [];
+    this.pagerElements = args.pagerElements || this.getDefaultPagerElements();
     this.initWidth = args.width || 640;
     this.initHeight = args.height || 480;
     this.fontSize = args.fontSize || 16;
@@ -267,9 +267,6 @@ var ReaderStatus = (function(){
   ReaderStatus.prototype = {
     isVertical : function(){
       return this.isVert;
-    },
-    isPagerEnable : function(){
-      return this.pagerElements.length > 0;
     },
     isWheelEnable : function(){
       return this.useWheel;
@@ -301,6 +298,12 @@ var ReaderStatus = (function(){
     },
     setProgress : function(percent){
       this.progress = percent;
+    },
+    getDefaultPagerElements : function(){
+      if(this.vertMode === "tb-rl"){
+	return ["progress", "left-next", "right-prev"];
+      }
+      return ["progress", "left-prev", "right-next"];
     },
     getPageNo : function(){
       return this.pageNo;
@@ -576,9 +579,6 @@ var Reader = (function(){
   Reader.prototype = {
     renderTo : function(target){
       this.target = target;
-      if(!this.status.isPagerEnable()){
-	this.pager.hide();
-      }
       this._layoutElements();
       this._startStream();
       if(this.status.isWheelEnable()){
@@ -636,15 +636,13 @@ var Reader = (function(){
 	  return document.createElement(_list_type);
 	},
 	onClickLink : function(page_no, link, toc){
-	  if(self.status.isPagerEnable()){
-	    var group_page_no = self.stream.getGroupPageNo(page_no);
-	    self.writePage(group_page_no);
-	    $(".nehan-header").removeClass("nehan-toc-clicked");
-	    $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
-	    //$(".nehan-toc-link").removeClass("nehan-toc-clicked");
-	    //$(link).addClass("nehan-toc-clicked");
-	    return false;
-	  }
+	  var group_page_no = self.stream.getGroupPageNo(page_no);
+	  self.writePage(group_page_no);
+	  $(".nehan-header").removeClass("nehan-toc-clicked");
+	  $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
+	  //$(".nehan-toc-link").removeClass("nehan-toc-clicked");
+	  //$(link).addClass("nehan-toc-clicked");
+	  return false;
 	}
       });
     },
@@ -731,13 +729,10 @@ var Reader = (function(){
       if(page_no === 0){
 	this.writePage(0);
 	this.onReadyPage(this);
-      } else if(!this.status.isPagerEnable()){
-	var append_screen = this._createScreenNode(html);
-	this.target.appendChild(append_screen);
       }
     },
     _cacheResult : function(page_no, result){
-      html = this._outputScreenHtml(page_no, result);
+      var html = this._outputScreenHtml(page_no, result);
       this.status.addScreenCache({
 	html:html,
 	result:result
@@ -848,22 +843,54 @@ Nehan.Reader.version = "1.0.0";
 ;(function($){
   $.fn.nehan = function(options){
     var elements = this;
+
+    // merge defaults
     var opt = $.extend({}, $.fn.nehan.defaults, options);
 
+    // create reader with pager
+    var create_reader = function($target, html){
+      (new Nehan.Reader(html, opt)).renderTo($target[0]);
+    };
+
+    // output pages straight forward
+    var output_pages = function($target, html){
+      var stream = Nehan.setup({
+	layout:{
+	  direction:opt.direction,
+
+	  // to use width of $target by default, not use merged default value of opt.
+	  width:(options.width || $target.width()),
+	  height:opt.height,
+	  fontSize:opt.fontSize
+	}
+      }).createPageStream(html);
+
+      stream.asyncGet({
+	onProgress:function(page_no, percent, seek_pos){
+	  var page_node = document.createElement("div");
+	  var result = stream.get(page_no);
+	  page_node.innerHTML = result.html;
+	  $target.append(page_node);
+	}
+      });
+    };
+    var init = opt.usePager? create_reader : output_pages;
+
     elements.each(function(){
-      var src = this.innerHTML;
-      if(opt.clearContent){
-	this.innerHTML = "";
-      }
-      (new Nehan.Reader(src, opt)).renderTo(this);
+      var $dom = $(this);
+      var html = $dom.html();
+      $dom.html("").css("display", "block");
+      init($dom, html);
     });
 
     return this;
   };
 
   $.fn.nehan.defaults = {
-    // whether clear content of each target selected by jquery selector. default true.
-    clearContent: true,
+    // whether use pager or not.
+    // if true, content is shown by single screen and pager.
+    // if false, pager is disabled and content is shown by multiple pages.
+    usePager:true,
     
     // size of screen width but this size is exceeded by spacingSize
     width: 500,

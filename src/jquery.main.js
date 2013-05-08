@@ -1,22 +1,54 @@
 ;(function($){
   $.fn.nehan = function(options){
     var elements = this;
+
+    // merge defaults
     var opt = $.extend({}, $.fn.nehan.defaults, options);
 
+    // create reader with pager
+    var create_reader = function($target, html){
+      (new Nehan.Reader(html, opt)).renderTo($target[0]);
+    };
+
+    // output pages straight forward
+    var output_pages = function($target, html){
+      var stream = Nehan.setup({
+	layout:{
+	  direction:opt.direction,
+
+	  // to use width of $target by default, not use merged default value of opt.
+	  width:(options.width || $target.width()),
+	  height:opt.height,
+	  fontSize:opt.fontSize
+	}
+      }).createPageStream(html);
+
+      stream.asyncGet({
+	onProgress:function(page_no, percent, seek_pos){
+	  var page_node = document.createElement("div");
+	  var result = stream.get(page_no);
+	  page_node.innerHTML = result.html;
+	  $target.append(page_node);
+	}
+      });
+    };
+    var init = opt.usePager? create_reader : output_pages;
+
     elements.each(function(){
-      var src = this.innerHTML;
-      if(opt.clearContent){
-	this.innerHTML = "";
-      }
-      (new Nehan.Reader(src, opt)).renderTo(this);
+      var $dom = $(this);
+      var html = $dom.html();
+      $dom.html("").css("display", "block");
+      init($dom, html);
     });
 
     return this;
   };
 
   $.fn.nehan.defaults = {
-    // whether clear content of each target selected by jquery selector. default true.
-    clearContent: true,
+    // whether use pager or not.
+    // if true, content is shown by single screen and pager.
+    // if false, pager is disabled and content is shown by multiple pages.
+    usePager:true,
     
     // size of screen width but this size is exceeded by spacingSize
     width: 500,

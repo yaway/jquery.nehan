@@ -6,9 +6,6 @@ var Reader = (function(){
   Reader.prototype = {
     renderTo : function(target){
       this.target = target;
-      if(!this.status.isPagerEnable()){
-	this.pager.hide();
-      }
       this._layoutElements();
       this._startStream();
       if(this.status.isWheelEnable()){
@@ -66,15 +63,13 @@ var Reader = (function(){
 	  return document.createElement(_list_type);
 	},
 	onClickLink : function(page_no, link, toc){
-	  if(self.status.isPagerEnable()){
-	    var group_page_no = self.stream.getGroupPageNo(page_no);
-	    self.writePage(group_page_no);
-	    $(".nehan-header").removeClass("nehan-toc-clicked");
-	    $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
-	    //$(".nehan-toc-link").removeClass("nehan-toc-clicked");
-	    //$(link).addClass("nehan-toc-clicked");
-	    return false;
-	  }
+	  var group_page_no = self.stream.getGroupPageNo(page_no);
+	  self.writePage(group_page_no);
+	  $(".nehan-header").removeClass("nehan-toc-clicked");
+	  $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
+	  //$(".nehan-toc-link").removeClass("nehan-toc-clicked");
+	  //$(link).addClass("nehan-toc-clicked");
+	  return false;
 	}
       });
     },
@@ -161,13 +156,10 @@ var Reader = (function(){
       if(page_no === 0){
 	this.writePage(0);
 	this.onReadyPage(this);
-      } else if(!this.status.isPagerEnable()){
-	var append_screen = this._createScreenNode(html);
-	this.target.appendChild(append_screen);
       }
     },
     _cacheResult : function(page_no, result){
-      html = this._outputScreenHtml(page_no, result);
+      var html = this._outputScreenHtml(page_no, result);
       this.status.addScreenCache({
 	html:html,
 	result:result

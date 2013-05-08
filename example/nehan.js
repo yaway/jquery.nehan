@@ -59,7 +59,6 @@ var Layout = {
   linkColor:"0000FF",
   fontImgRoot:"http://nehan.googlecode.com/hg/char-img",
   lineRate: 2.0,
-  alignedSpacingRate:0.5,
   listMarkerSpacingRate:0.5,
 
   createBox : function(size, parent, type){
@@ -94,9 +93,6 @@ var Layout = {
   },
   getStdHoriFlow : function(){
     return BoxFlows.getByName(this.hori);
-  },
-  getAlignedSpacingSize : function(){
-    return Math.floor(this.fontSize * this.alignedSpacingRate);
   },
   getListMarkerSpacingSize : function(font_size){
     return Math.floor(font_size * this.listMarkerSpacingRate);
@@ -857,13 +853,13 @@ var Style = {
     "text-align":"end"
   },
   //-------------------------------------------------------
-  // block-align classes
+  // float classes
   //-------------------------------------------------------
-  ".nehan-ba-start":{
-    "block-align":"start"
+  ".nehan-float-start":{
+    "float":"start"
   },
-  ".nehan-ba-end":{
-    "block-align":"end"
+  ".nehan-float-end":{
+    "float":"end"
   },
   //-------------------------------------------------------
   // flow classes
@@ -1020,28 +1016,32 @@ var Style = {
     "flow":"inherit",
     "width":"4em",
     "height":"4em",
-    "block-align":"start",
+    "float":"start",
     "line-rate":1.0,
     "font-size":"4em"
   },
   ".nehan-line-no-ruby":{
     "line-rate":1.0
   },
-  ".nehan-append-after":{
+  ".nehan-gap-start":{
+    "margin":{
+      "start":"1em"
+    }
+  },
+  ".nehan-gap-end":{
+    "margin":{
+      "end":"1em"
+    }
+  },
+  ".nehan-gap-after":{
     "margin":{
       "after":"1em"
     }
   },
-  ".nehan-prepend-before":{
+  ".nehan-gap-before":{
     "margin":{
       "before":"1em"
     }
-  },
-  ".nehan-ti-1em":{
-    "text-indent":"1em"
-  },
-  ".nehan-jisage":{
-    "text-indent":"1em" // same as '.nehan-ti-1em'
   }
 };
 
@@ -1734,8 +1734,8 @@ var Tag = (function (){
     getWrapSrc : function(){
       return this.src + this.content + this.getCloseSrc();
     },
-    getBlockAlign : function(){
-      return this.getCssAttr("block-align", "none");
+    getLogicalFloat : function(){
+      return this.getCssAttr("float", "none");
     },
     getHeaderRank : function(){
       if(this.getName().match(/h([1-6])/)){
@@ -1778,8 +1778,8 @@ var Tag = (function (){
     isClassAttrEnable : function(){
       return (typeof this.tagAttr["class"] != "undefined");
     },
-    isBlockAligned : function(){
-      return this.getBlockAlign() != "none";
+    isFloated : function(){
+      return this.getLogicalFloat() != "none";
     },
     isPush : function(){
       return (typeof this.tagAttr.push != "undefined");
@@ -1817,7 +1817,7 @@ var Tag = (function (){
       return this.getCssAttr("embeddable") === true;
     },
     isBlock : function(){
-      if(this.isBlockAligned() || this.isPush() || this.isPull()){
+      if(this.isFloated() || this.isPush() || this.isPull()){
 	return true;
       }
       return this.getCssAttr("display", "inline") === "block";
@@ -3206,7 +3206,7 @@ var BoxFlow = (function(){
     getFlipFlow : function(){
       return this.isTextVertical()? Layout.getStdHoriFlow() : Layout.getStdVertFlow();
     },
-    getAlignedWrapFlow : function(){
+    getFloatedWrapFlow : function(){
       if(this.isTextVertical()){
 	return this;
       }
@@ -3960,17 +3960,6 @@ var Box = (function(){
     getContentExtent : function(flow){
       return this.size.getExtent(flow || this.flow);
     },
-    getMaxTextMeasure : function(flow){
-      var measure = this.getContentMeasure(flow || this.flow);
-      var space = Layout.fontSize; // this is space for tail NG.
-
-      // if marker or :first-letter(pseudo-element), tail space is zero.
-      if(this._type === "li-marker" ||
-	 this._type === ":first-letter"){
-	return Math.max(space, measure);
-      }
-      return Math.max(space, measure - space);
-    },
     getMaxChildMeasure : function(flow){
       var _flow = flow || this.flow;
       var max_measure = 0;
@@ -4029,8 +4018,8 @@ var Box = (function(){
       var rest_extent = this.getRestContentExtent();
       return this.flow.getBoxSize(rest_measure, rest_extent);
     },
-    getAlignedWrapFlow : function(){
-      return this.flow.getAlignedWrapFlow();
+    getFloatedWrapFlow : function(){
+      return this.flow.getFloatedWrapFlow();
     },
     getParentFlow : function(){
       return this.parent? this.parent.flow : null;
@@ -4155,6 +4144,12 @@ var Box = (function(){
     },
     isValidSize : function(){
       return this.size.isValid();
+    },
+    canJustify : function(){
+      if(this._type === "li-marker" || this._type === ":first-letter"){
+	return false;
+      }
+      return true;
     },
     canInclude : function(size){
       return this.size.canInclude(size);
@@ -4290,6 +4285,12 @@ var TextLine = (function(){
   }
 
   TextLine.prototype = {
+    // text-line object get to be parent other texts only when ruby is generated.
+    // so this function is called only from VerticalInlineEvaluator::evalRubyLabelLine,
+    // and ruby is not justify target.
+    canJustify : function(){
+      return false;
+    },
     isTextVertical : function(){
       return this.flow.isTextVertical();
     },
@@ -4309,10 +4310,7 @@ var TextLine = (function(){
       return this.textMeasure;
     },
     getTextRestMeasure : function(){
-      return this.getMaxTextMeasure() - this.textMeasure;
-    },
-    getMaxTextMeasure : function(){
-      return Box.prototype.getMaxTextMeasure.call(this);
+      return this.getContentMeasure() - this.textMeasure;
     },
     getContentMeasure : function(flow){
       return this.size.getMeasure(flow || this.flow);
@@ -6317,9 +6315,9 @@ var BlockGenerator = Class.extend({
 	break;
       }
     }
-    var block_align = this.markup.getCssAttr("block-align", "none");
-    if(block_align != "none"){
-      box.blockAlign = block_align;
+    var logical_float = this.markup.getCssAttr("float", "none");
+    if(logical_float != "none"){
+      box.logicalFloat = logical_float;
     }
     var text_indent = this.markup.getCssAttr("text-indent", 0);
     if(text_indent){
@@ -6467,7 +6465,7 @@ var LineContext = (function(){
     this.textIndent = stream.isHead()? (parent.textIndent || 0) : 0;
     this.maxFontSize = parent.fontSize;
     this.maxExtent = 0;
-    this.maxMeasure = parent.getMaxTextMeasure() - this.textIndent;
+    this.maxMeasure = parent.getContentMeasure() - this.textIndent;
     this.curMeasure = 0;
     this.restMeasure = this.maxMeasure;
     this.restExtent = parent.getRestContentExtent();
@@ -6491,11 +6489,15 @@ var LineContext = (function(){
     canContainExtent : function(extent){
       return this.restExtent >= extent;
     },
-    canContainAdvance : function(advance){
-      return this.restMeasure >= advance;
+    canContainAdvance : function(element, advance){
+      if(element instanceof Box || !this.parent.canJustify()){
+	return this.restMeasure >= advance;
+      }
+      // justify target need space for tail fix.
+      return this.restMeasure - this.parent.fontSize >= advance;
     },
-    canContain : function(advance, extent){
-      return this.canContainAdvance(advance) && this.canContainExtent(extent);
+    canContain : function(element, advance, extent){
+      return this.canContainAdvance(element, advance) && this.canContainExtent(extent);
     },
     isPreLine : function(){
       return this.parent._type === "pre";
@@ -6547,12 +6549,13 @@ var LineContext = (function(){
       this.stream.next();
     },
     getNextToken : function(){
+      var is_line_start = this.isLineStart();
       var token = this.stream.get();
 
       // skip head half space if 1 and 2.
       // 1. first token of line is a half space.
       // 2. next text token is a word.
-      if(token && this.isLineStart() && Token.isChar(token) && token.isHalfSpaceChar()){
+      if(token && is_line_start && Token.isChar(token) && token.isHalfSpaceChar()){
 	var next = this.findFirstText();
 	if(next && Token.isWord(next)){
 	  token = this.stream.get();
@@ -6949,7 +6952,7 @@ var InlineGenerator = (function(){
 	var font_size = this._getFontSize(ctx, element); // font size of element.
 
 	// if overflow inline max, break loop
-	if(!ctx.canContain(advance, extent)){
+	if(!ctx.canContain(element, advance, extent)){
 	  if(this.generator){
 	    this.generator.rollback();
 	  } else {
@@ -7320,9 +7323,9 @@ var PageGenerator = BlockGenerator.extend({
       return box;
     }
 
-    // aligned box is treated as a single block element(with rest spaces filled by other elements).
-    if(box instanceof Box && box.blockAlign){
-      return this._yieldAlignedBlock(parent, box, tag);
+    // floated box is treated as a single block element(with rest spaces filled by other elements).
+    if(box instanceof Box && box.logicalFloat){
+      return this._yieldFloatedBlock(parent, box, tag);
     }
 
     return box; // return as single block.
@@ -7344,8 +7347,8 @@ var PageGenerator = BlockGenerator.extend({
     }
     return generator.yield(parent, static_size);
   },
-  _yieldAlignedBlock : function(parent, aligned_box, tag){
-    var generator = new AlignedPageGenerator(this.stream, this.context, aligned_box);
+  _yieldFloatedBlock : function(parent, aligned_box, tag){
+    var generator = new FloatedBlockGenerator(this.stream, this.context, aligned_box);
     var block = generator.yield(parent);
     this.generator = generator.getCurGenerator(); // inherit generator of aligned area
     return block;
@@ -7531,58 +7534,45 @@ var BodyPageGenerator = SectionRootGenerator.extend({
   }
 });
 
-var AlignedPageGenerator = PageGenerator.extend({
-  init : function(stream, context, aligned_box){
+var FloatedBlockGenerator = PageGenerator.extend({
+  init : function(stream, context, floated_box){
     this.context = context;
     this.stream = stream;
-    this.alignedBox = aligned_box;
+    this.floatedBox = floated_box;
   },
   yield: function(parent){
     var backupPos2 = this.stream.backupPos; // backup the 'backup pos'
-    var wrap_box = this._getAlignedWrapBox(parent, this.alignedBox);
-    var rest_size = this._getAlignedRestSize(parent, wrap_box, this.alignedBox);
-    var rest_box = this._createBox(rest_size, wrap_box, parent);
-    var rest_page = this._yieldPageTo(rest_box);
-    if(this.alignedBox.blockAlign === "start"){
-      wrap_box.addChild(this.alignedBox);
-      wrap_box.addChild(rest_page);
+    var wrap_box = this._getFloatedWrapBox(parent, this.floatedBox);
+    var rest_box = this._getFloatedRestBox(parent, wrap_box, this.floatedBox);
+    this._yieldPageTo(rest_box);
+    if(this.floatedBox.logicalFloat === "start"){
+      wrap_box.addChild(this.floatedBox);
+      wrap_box.addChild(rest_box);
     } else {
-      wrap_box.addChild(rest_page);
-      wrap_box.addChild(this.alignedBox);
+      wrap_box.addChild(rest_box);
+      wrap_box.addChild(this.floatedBox);
     }
     this.stream.backupPos = backupPos2; // restore backup pos
     return wrap_box;
   },
-  // aligned area has no markup, so create page box in manual.
-  _createBox : function(size, wrap_box, parent){
-    var box = Layout.createBox(size, wrap_box, "box");
-    box.setFlow(parent.flow);
-
-    // every lines already has a single tail space to handle 'justify'.
-    // so we add block space for only target that is aligned to 'start'.
-    if(this.alignedBox.blockAlign === "start"){
-      var edge = new BoxEdge();
-      var spacing_size = Layout.getAlignedSpacingSize();
-      edge.setEdgeStart("margin", box.flow, spacing_size);
-      box.setEdgeBySub(edge);
-    }
-    return box;
+  _getFloatedRestBox : function(parent, wrap_box, floated_box){
+    var rest_measure = parent.getContentMeasure() - floated_box.getBoxMeasure(parent.flow);
+    var rest_extent = floated_box.getBoxExtent(parent.flow);
+    var rest_size = parent.flow.getBoxSize(rest_measure, rest_extent);
+    var rest_box = Layout.createBox(rest_size, wrap_box, "box");
+    rest_box.setFlow(parent.flow);
+    return rest_box;
   },
-  _getAlignedWrapBox : function(parent, aligned_box){
+  _getFloatedWrapBox : function(parent, floated_box){
     var wrap_measure = parent.getContentMeasure();
-    var wrap_extent = aligned_box.getBoxExtent(parent.flow);
+    var wrap_extent = floated_box.getBoxExtent(parent.flow);
     var wrap_box_size = parent.flow.getBoxSize(wrap_measure, wrap_extent);
     var wrap_box = Layout.createBox(wrap_box_size, parent, "box");
-    var wrap_flow = parent.getAlignedWrapFlow();
+    var wrap_flow = parent.getFloatedWrapFlow();
     wrap_box.setParent(parent, false);
     wrap_box.setFlow(wrap_flow);
-    aligned_box.setParent(wrap_box, true);
+    floated_box.setParent(wrap_box, true);
     return wrap_box;
-  },
-  _getAlignedRestSize : function(parent, wrap_box, aligned_box){
-    var rest_measure = parent.getContentMeasure() - aligned_box.getBoxMeasure(parent.flow);
-    var rest_extent = aligned_box.getBoxExtent(parent.flow);
-    return parent.flow.getBoxSize(rest_measure, rest_extent);
   }
 });
 
@@ -7596,7 +7586,7 @@ var InlinePageGenerator = PageGenerator.extend({
     var wrap = Layout.createBox(size, parent, "div");
     var page = this._super(wrap); // yield page to wrap.
     wrap.addChild(page);
-    wrap.blockAlign = page.blockAlign;
+    wrap.logicalFloat = page.logicalFloat;
     return wrap;
   }
 });

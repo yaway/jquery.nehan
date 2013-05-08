@@ -9,7 +9,7 @@ var ReaderStatus = (function(){
     this.vertMode = args.vert || "tb-rl";
     this.isVert = args.direction.indexOf("vert") >= 0;
     this.readerElements = args.readerElements || ["screen", "pager"];
-    this.pagerElements = args.pagerElements || [];
+    this.pagerElements = args.pagerElements || this.getDefaultPagerElements();
     this.initWidth = args.width || 640;
     this.initHeight = args.height || 480;
     this.fontSize = args.fontSize || 16;
@@ -22,9 +22,6 @@ var ReaderStatus = (function(){
   ReaderStatus.prototype = {
     isVertical : function(){
       return this.isVert;
-    },
-    isPagerEnable : function(){
-      return this.pagerElements.length > 0;
     },
     isWheelEnable : function(){
       return this.useWheel;
@@ -56,6 +53,12 @@ var ReaderStatus = (function(){
     },
     setProgress : function(percent){
       this.progress = percent;
+    },
+    getDefaultPagerElements : function(){
+      if(this.vertMode === "tb-rl"){
+	return ["progress", "left-next", "right-prev"];
+      }
+      return ["progress", "left-prev", "right-next"];
     },
     getPageNo : function(){
       return this.pageNo;
