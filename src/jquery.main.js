@@ -32,13 +32,20 @@
 	}
       });
     };
+
+    var get_source = function($target){
+      var tag_name = $target.get(0).tagName.toLowerCase();
+      return (tag_name === "textarea")? $target.val() : $target.html();
+    };
+
     var init = opt.usePager? create_reader : output_pages;
 
     elements.each(function(){
       var $dom = $(this);
-      var html = $dom.html();
-      $dom.html("").css("display", "block");
-      init($dom, html);
+      var html = get_source($dom);
+      $dom.css("display", "none");
+      var $dst = $("<div />").attr("class", $dom.attr("class")).insertAfter($dom);
+      init($dst, html);
     });
 
     return this;
