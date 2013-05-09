@@ -43,7 +43,7 @@
     elements.each(function(){
       var $dom = $(this);
       var html = get_source($dom);
-      $dom.css("display", "none");
+      $dom.html("").css("display", "none");
       var $dst = $("<div />").attr("class", $dom.attr("class")).insertAfter($dom);
       init($dst, html);
     });
