@@ -58,7 +58,7 @@ var Reader = (function(){
     getOutlineNode : function(list_type){
       var self = this;
       var _list_type = list_type || "ol";
-      return this.stream.getOutlineNode("body", {
+      return this.stream.hasOutline("body")? this.stream.getOutlineNode("body", {
 	createRoot: function(){
 	  return document.createElement(_list_type);
 	},
@@ -71,7 +71,7 @@ var Reader = (function(){
 	  //$(link).addClass("nehan-toc-clicked");
 	  return false;
 	}
-      });
+      }) : null;
     },
     getEngine : function(){
       return this.engine;

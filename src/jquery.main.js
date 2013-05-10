@@ -143,7 +143,10 @@
     // this callback is called when you select pager of "indicator".
     // by default, we append outline at the bottom of reader.
     onComplete : function(reader){
-      reader.getRootNode().appendChild(reader.getOutlineNode("ol"));
+      var outline_dom = reader.getOutlineNode("ol");
+      if(outline_dom){
+	reader.getRootNode().appendChild(outline_dom);
+      }
     }
   };
 })(jQuery);

@@ -631,7 +631,7 @@ var Reader = (function(){
     getOutlineNode : function(list_type){
       var self = this;
       var _list_type = list_type || "ol";
-      return this.stream.getOutlineNode("body", {
+      return this.stream.hasOutline("body")? this.stream.getOutlineNode("body", {
 	createRoot: function(){
 	  return document.createElement(_list_type);
 	},
@@ -644,7 +644,7 @@ var Reader = (function(){
 	  //$(link).addClass("nehan-toc-clicked");
 	  return false;
 	}
-      });
+      }) : null;
     },
     getEngine : function(){
       return this.engine;
@@ -985,7 +985,10 @@ Nehan.Reader.version = "1.0.0";
     // this callback is called when you select pager of "indicator".
     // by default, we append outline at the bottom of reader.
     onComplete : function(reader){
-      reader.getRootNode().appendChild(reader.getOutlineNode("ol"));
+      var outline_dom = reader.getOutlineNode("ol");
+      if(outline_dom){
+	reader.getRootNode().appendChild(outline_dom);
+      }
     }
   };
 })(jQuery);
