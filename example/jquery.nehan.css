@@ -35,6 +35,7 @@ input.nehan-reader-page-no{
   font-family:Georgia,Verdana,Chicago;
   width:30px;
   margin:10px;
+  vertical-align:middle;
 }
 .nehan-reader-page-count{
   font-weight:bold;
