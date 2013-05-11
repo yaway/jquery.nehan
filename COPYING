@@ -1,6 +1,6 @@
 /*
  jquery.nehan.js
- Copyright (C) 2013-, Watanabe Masaki<lambda.watanabe[at]gmail.com>
+ Copyright (C) 2013 Watanabe Masaki<lambda.watanabe[at]gmail.com>
 
  licensed under MIT license.
 
