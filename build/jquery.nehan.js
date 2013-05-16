@@ -605,10 +605,9 @@ var Reader = (function(){
       var page_no = this.status.getPageNo();
       if(this.stream.hasPage(page_no+1)){
 	this.writePage(page_no+1);
-      }
-      if(this.stream.hasNext()){
-	var result = this._getNextResult();
-	this._cacheResult(page_no + 1, result);
+      } else if(this.stream.hasNext()){ // still not calclated and stream has next.
+	var page_result = this._getNextPage();
+	this._cacheResult(page_result);
 	this.writePage(page_no+1);
       }
     },
@@ -687,8 +686,8 @@ var Reader = (function(){
       }
     },
     _startSeqAccessStream : function(){
-      var first_page = this._getNextResult();
-      this._cacheResult(0, first_page);
+      var first_page = this._getNextPage();
+      this._cacheResult(first_page);
       this.writePage(0);
       this.onReadyPage(this);
     },
@@ -698,8 +697,9 @@ var Reader = (function(){
 	onComplete : function(time){
 	  self._onComplete(time);
 	},
-	onProgress : function(page_no, percent, seek_pos){
-	  self._onProgress(page_no, percent, seek_pos);
+	onProgress : function(caller){
+	  var page_result = caller.getSeekPageResult();
+	  self._onProgress(page_result);
 	}
       });
     },
@@ -711,7 +711,7 @@ var Reader = (function(){
 	self.writeNextPage();
       });
     },
-    _getNextResult : function(){
+    _getNextPage : function(){
       return this.stream.getNext();
     },
     _getResult : function(page_no){
@@ -720,10 +720,10 @@ var Reader = (function(){
     _onComplete : function(time){
       this.onComplete(this);
     },
-    _onProgress : function(page_no, percent, seek_pos){
-      var result = this._getResult(page_no);
+    _onProgress : function(page_result){
+      var page_no = page_result.getPageNo();
       this.status.setPageCount(page_no + 1);
-      this._cacheResult(page_no, result);
+      this._cacheResult(page_result);
       this.pager.updatePageCount();
 
       if(page_no === 0){
@@ -731,11 +731,11 @@ var Reader = (function(){
 	this.onReadyPage(this);
       }
     },
-    _cacheResult : function(page_no, result){
-      var html = this._outputScreenHtml(page_no, result);
+    _cacheResult : function(page_result){
+      var html = this._outputScreenHtml(page_result);
       this.status.addScreenCache({
 	html:html,
-	result:result
+	result:page_result
       });
     },
     _updateScreen : function(){
@@ -760,7 +760,8 @@ var Reader = (function(){
 	return false;
       });
     },
-    _outputScreenHtml : function(page_no, result){
+    _outputScreenHtml : function(page_result){
+      var page_no = page_result.getPageNo();
       var cell_order = this.status.getCellOrder();
       var facing_page_order = this.status.getFacingPageOrder(page_no);
 
@@ -774,8 +775,8 @@ var Reader = (function(){
       this.template.setValue("right_page_no", facing_page_order.right);
       this.template.setValue("left_page_no", facing_page_order.left);
 
-      for(var i = 0; i < result.getGroupCount(); i++){
-	this.template.setValue(cell_order[i], result.getHtml(i));
+      for(var i = 0; i < page_result.getGroupCount(); i++){
+	this.template.setValue(cell_order[i], page_result.getHtml(i));
       }
 
       return this.template.render();
@@ -866,10 +867,10 @@ Nehan.Reader.version = "1.0.0";
       }).createPageStream(html);
 
       stream.asyncGet({
-	onProgress:function(page_no, percent, seek_pos){
+	onProgress:function(caller){
 	  var page_node = document.createElement("div");
-	  var result = stream.get(page_no);
-	  page_node.innerHTML = result.html;
+	  var page_result = stream.getSeekPageResult();
+	  page_node.innerHTML = page_result.getHtml();
 	  $target.append(page_node);
 	}
       });

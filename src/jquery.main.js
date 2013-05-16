@@ -24,10 +24,10 @@
       }).createPageStream(html);
 
       stream.asyncGet({
-	onProgress:function(page_no, percent, seek_pos){
+	onProgress:function(caller){
 	  var page_node = document.createElement("div");
-	  var result = stream.get(page_no);
-	  page_node.innerHTML = result.html;
+	  var page_result = stream.getSeekPageResult();
+	  page_node.innerHTML = page_result.getHtml();
 	  $target.append(page_node);
 	}
       });
