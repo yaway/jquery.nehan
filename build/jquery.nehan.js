@@ -847,20 +847,27 @@ Nehan.Reader.version = "1.0.0";
 
     // merge defaults
     var opt = $.extend({}, $.fn.nehan.defaults, options);
+    var get_width = function(width_value){
+      var int_width = parseInt(width_value);
+      if(String(width_value).indexOf("%") > 0){
+	return Math.floor(int_width * screen.width / 100);
+      }
+      return int_width;
+    };
 
     // create reader with pager
     var create_reader = function($target, html){
+      opt.width = get_width(options.width || $target.width());
       (new Nehan.Reader(html, opt)).renderTo($target[0]);
     };
 
     // output pages straight forward
     var output_pages = function($target, html){
+      var width = get_width(options.width || $target.width());
       var stream = Nehan.setup({
 	layout:{
 	  direction:opt.direction,
-
-	  // to use width of $target by default, not use merged default value of opt.
-	  width:(options.width || $target.width()),
+	  width:width,
 	  height:opt.height,
 	  fontSize:opt.fontSize
 	}
@@ -894,15 +901,13 @@ Nehan.Reader.version = "1.0.0";
     return this;
   };
 
+  // notice : default width is dynamically decided by target width.
   $.fn.nehan.defaults = {
     // whether use pager or not.
     // if true, content is shown by single screen and pager.
     // if false, pager is disabled and content is shown by multiple pages.
     usePager:true,
     
-    // size of screen width but this size is exceeded by spacingSize
-    width: 500,
-
     // size of screen height but this size is exceeded by spacingSize
     height: 380,
 
