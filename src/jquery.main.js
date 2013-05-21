@@ -21,14 +21,20 @@
     // output pages straight forward
     var output_pages = function($target, html){
       var width = get_width(options.width || $target.width());
-      var stream = Nehan.setup({
+      var engine = Nehan.setup({
 	layout:{
 	  direction:opt.direction,
 	  width:width,
 	  height:opt.height,
 	  fontSize:opt.fontSize
 	}
-      }).createPageStream(html);
+      });
+
+      if(opt.onCreateEngine){
+	opt.onCreateEngine(engine);
+      }
+      
+      var stream = engine.createPageStream(html);
 
       stream.asyncGet({
 	onProgress:function(caller){
@@ -128,18 +134,19 @@
     // this is called before start parsing.
     // usefull to edit basic style of engine.
     onCreateEngine : function(engine){
-      // var style = engine.Style;
-      // style.h1["font-size"] = "30px";
-      // style.h1.border = {after:"1px"};
+      engine.addRule("h1", "font-size", "30px");
+      engine.addRule("h1", "border", {after:"1px"});
     },
 
     // called when first page is set to screen.
     // usefull to setup keybord shortcut or enable variaous ui effects.
+    // this is not called if usePager is false.
     onReadyPage : function(reader){
     },
 
     // called after screen for 'page_no' is updated.
     // this callback is not called if you disabled pager.
+    // this is not called if usePager is false.
     onPage : function(reader){
       // you can do something unique here.
     },
@@ -147,6 +154,7 @@
     // called after all pages generated.
     // this callback is called when you select pager of "indicator".
     // by default, we append outline at the bottom of reader.
+    // this is not called if usePager is false.
     onComplete : function(reader){
       var outline_dom = reader.getOutlineNode("ol");
       if(outline_dom){
