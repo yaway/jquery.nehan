@@ -17,6 +17,7 @@ var ReaderStatus = (function(){
     this.colCount = Math.max(1, Math.min(2, args.colCount));
     this.spacingSize = args.spacingSize || this.fontSize;
     this.useWheel = args.useWheel;
+    this.useNombre = args.useNombre;
   }
 
   ReaderStatus.prototype = {
@@ -25,6 +26,9 @@ var ReaderStatus = (function(){
     },
     isWheelEnable : function(){
       return this.useWheel;
+    },
+    isNombreEnable : function(){
+      return this.useNombre;
     },
     isSeqAccess : function(){
       for(var i = 0; i < this.pagerElements.length; i++){
@@ -102,6 +106,10 @@ var ReaderStatus = (function(){
     getCellCount : function(){
       return this.rowCount * this.colCount;
     },
+    getTemplateName : function(){
+      var ret = [this.rowCount, this.colCount].join("x");
+      return this.isNombreEnable()? [ret, "nombre"].join("-") : ret;
+    },
     getFontSize : function(){
       return this.fontSize;
     },
@@ -142,7 +150,7 @@ var ReaderStatus = (function(){
       return (this.rowCount >= 2)? 1 : 0;
     },
     getFooterHeight : function(){
-      return this.fontSize * 2;
+      return this.isNombreEnable()? this.fontSize * 2 : 0;
     },
     getScreenWidth : function(){
       return this.initWidth + this.getHoriSpace() + this.getHoriBorderSize();

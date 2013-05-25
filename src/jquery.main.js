@@ -98,6 +98,9 @@
     // whether paging by mouse wheel is enabled. default true.
     useWheel:true,
 
+    // whether add nombre to each page element. default false.
+    useNombre:false,
+
     // ui parts of reader app
     // --------------------------------------------------------
     // screen: main contents

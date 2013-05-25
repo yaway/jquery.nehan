@@ -45,6 +45,9 @@ var Reader = (function(){
     getPageNo : function(){
       return this.status.getPageNo();
     },
+    getPageCount : function(){
+      return this.status.getPageCount();
+    },
     getRootNode : function(){
       return this.target;
     },
@@ -227,7 +230,7 @@ var Reader = (function(){
       return this.engine.createPageGroupStream(src, group_count);
     },
     _createTemplate : function(){
-      var name = [this.status.getRowCount(), this.status.getColCount()].join("x");
+      var name = this.status.getTemplateName();
       var source = Themes[name] || "";
       return new Template(source);
     },
