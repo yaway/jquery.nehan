@@ -1017,7 +1017,8 @@ Nehan.Reader.version = "1.0.0";
 
     var get_source = function($target){
       var tag_name = $target.get(0).tagName.toLowerCase();
-      return (tag_name === "textarea")? $target.val() : $target.html();
+      var source = (tag_name === "textarea")? $target.val() : $target.html();
+      return opt.onCreateSource(source);
     };
 
     var init = opt.usePager? create_reader : output_pages;
@@ -1101,6 +1102,13 @@ Nehan.Reader.version = "1.0.0";
     // pagerElements:["left-prev", "right-next", "progress"], // horizontal-lr, sequencial access pager
     // pagerElements:[], // no pager(append mode)
     pagerElements:["left-next", "indicator", "right-prev"],
+
+    // called before processing source text.
+    // by default, do nothing.
+    // usefull to edit original source text.
+    onCreateSource : function(text){
+      return text;
+    },
 
     // called when layout engine is created and ready to use.
     // this is called before start parsing.
