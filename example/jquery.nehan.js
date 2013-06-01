@@ -1114,8 +1114,15 @@ Nehan.Reader.version = "1.0.0";
     // this is called before start parsing.
     // usefull to edit basic style of engine.
     onCreateEngine : function(engine){
-      engine.addRule("h1", "font-size", "30px");
-      engine.addRule("h1", "border", {after:"1px"});
+      // example: you cant edit style like this.
+      /*
+      engine.setStyle("h1", {
+	border:{
+	  after:"1px"
+	},
+	"font-size":"30px"
+      });
+      */
     },
 
     // called when first page is set to screen.
