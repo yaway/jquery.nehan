@@ -974,7 +974,7 @@ Nehan.Reader.version = "1.0.0";
     // merge defaults
     var opt = $.extend({}, $.fn.nehan.defaults, options);
     var get_width = function(width_value){
-      var int_width = parseInt(width_value);
+      var int_width = parseInt(width_value, 10);
       if(String(width_value).indexOf("%") > 0){
 	return Math.floor(int_width * screen.width / 100);
       }
