@@ -760,8 +760,8 @@ var Reader = (function(){
 	createRoot: function(){
 	  return document.createElement(_list_type);
 	},
-	onClickLink : function(page_no, link, toc){
-	  var group_page_no = self.stream.getGroupPageNo(page_no);
+	onClickLink : function(toc){
+	  var group_page_no = self.stream.getGroupPageNo(toc.pageNo);
 	  self.writePage(group_page_no);
 	  $(".nehan-header").removeClass("nehan-toc-clicked");
 	  $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
