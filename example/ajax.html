@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>jquery.nehan.js demo</title>
+    <meta content="ja" name="content-language">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Content-Style-Type" content="text/css">
+    <meta http-equiv="Content-Script-Type" content="text/javascript">
+    <link rel="stylesheet" type="text/css" href="nehan.css" />
+    <link rel="stylesheet" type="text/css" href="jquery.nehan.css" />
+    <link href="prettify.css" rel="stylesheet" type="text/css" />
+    <style type="text/css">
+      body{
+        font-family:'Meiryo','メイリオ', 'Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック',sans-serif;
+        margin:2em 3em;
+      }
+      #target{display:none;}
+      .content{ width: 980px; margin 0 auto; }
+      .generated-result{ float:left; width: 520px; margin-right:20px; }
+      .sample-code{ float:left; width: 420px; }
+      .clearfix{ clear:both; }
+      .prettyprinted{ border:1px solid #ccc; padding:0.5em !important; border-radius:5px; }
+      .no-pager .nehan-body{ margin-bottom:1.5em; }
+    </style>
+    <script type="text/javascript" src="nehan.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="jquery.nehan.js"></script>
+    <script type="text/javascript" language="javascript" src="prettify.js"></script>
+    <script type="text/javascript" language="javascript" src="lang-css.js"></script>
+    <script type="text/javascript">
+      $(function(){
+         $("#target").nehan({
+            width:400,
+            height:400
+         });
+      });
+    </script>
+  </head>
+  <body onload="prettyPrint()">
+    <div class="content">
+      <h1>display by ajax</h1>
+      <div class="generated-result">
+	<h2>generated result</h2>
+	<div id="target" data-resource="demo.txt"></div>
+      </div>
+      <div class="sample-code">
+	<p>html:</p>
+	<pre class="prettyprint"><code class="language-html">&lt;div id="target" data-resource="demo.txt"&gt;&lt;/div&gt;</code></pre>
+
+	<p>javascript:</p>
+	<pre class="prettyprint"><code class="language-js"><code>$(function(){
+  $("#target").nehan({
+     width:400,
+     height:400
+  });
+});</code></pre>
+      </div>
+      <div class="clearfix"></div>
+    </div>
+  </body>
+</html>
