@@ -46,20 +46,35 @@
       });
     };
 
-    var get_source = function($target){
-      var tag_name = $target.get(0).tagName.toLowerCase();
-      var source = (tag_name === "textarea")? $target.val() : $target.html();
-      return opt.onCreateSource(source);
+    var get_source_from_dom = function($dom){
+      var tag_name = $dom.get(0).tagName.toLowerCase();
+      return (tag_name === "textarea")? $dom.val() : $dom.html();
     };
 
-    var init = opt.usePager? create_reader : output_pages;
+    var show = function($dom, source){
+      $dom.html("").css("display", "none");
+      var $dst = $("<div />").attr("class", $dom.attr("class") || "").insertAfter($dom);
+      if(opt.usePager){
+	create_reader($dst, source);
+      } else {
+	output_pages($dst, source);
+      }
+    };
 
     elements.each(function(){
       var $dom = $(this);
-      var html = get_source($dom);
-      $dom.html("").css("display", "none");
-      var $dst = $("<div />").attr("class", $dom.attr("class")).insertAfter($dom);
-      init($dst, html);
+      var source;
+      var resource = $dom.data("resource");
+      if(resource){
+	$.get(resource, function(source){
+	  source = opt.onCreateSource(source);
+	  show($dom, source);
+	});
+      } else {
+	source = get_source_from_dom($dom);
+	source = opt.onCreateSource(source);
+	show($dom, source);
+      }
     });
 
     return this;
