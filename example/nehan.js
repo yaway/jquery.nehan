@@ -1244,6 +1244,13 @@ var List = {
       }
     }
     return ret;
+  },
+  zip : function(lst1, lst2){
+    var ret = [];
+    for(var i = 0, len1=lst1.length, len2=lst2.length; i < len1 && i < len2; i++){
+      ret[i] = [lst1[i], lst2[i]];
+    }
+    return ret;
   }
 };
 
@@ -1270,48 +1277,48 @@ var Obj = {
 };
 
 var UnitSize = {
-  mapFontSize : function(val, font_size){
-    var str = (typeof val == "string")? val : String(val);
+  getUnitSize : function(val, unit_size){
+    var str = (typeof val === "string")? val : String(val);
     if(str.indexOf("rem") > 0){
       var rem_scale = parseFloat(str.replace("rem",""));
       return Math.floor(Layout.fontSize * rem_scale); // use root font-size
     }
     if(str.indexOf("em") > 0){
       var em_scale = parseFloat(str.replace("em",""));
-      return Math.floor(font_size * em_scale);
+      return Math.floor(unit_size * em_scale);
     }
     if(str.indexOf("pt") > 0){
       return Math.floor(parseInt(str, 10) * 4 / 3);
     }
     if(str.indexOf("%") > 0){
-      return Math.floor(font_size * parseInt(str, 10) / 100);
+      return Math.floor(unit_size * parseInt(str, 10) / 100);
     }
     var px = parseInt(str, 10);
     return isNaN(px)? 0 : px;
   },
-  mapBoxSize : function(val, font_size, max_size){
-    var str = (typeof val == "string")? val : String(val);
+  getBoxSize : function(val, unit_size, max_size){
+    var str = (typeof val === "string")? val : String(val);
     if(str.indexOf("%") > 0){
       var scaled_size = Math.floor(max_size * parseInt(str, 10) / 100);
       return Math.min(max_size, scaled_size); // restrict less than maxMeasure
     }
-    return this.mapFontSize(val, font_size);
+    return this.getUnitSize(val, unit_size);
   },
-  parseEdgeSize : function(obj, font_size, max_size){
-    if(obj instanceof Array){
-      return List.map(obj, function(val){
-	return UnitSize.mapBoxSize(val, font_size, max_size);
-      });
+  getCornerSize : function(val, unit_size){
+    var ret = {};
+    for(var prop in val){
+      ret[prop] = [0, 0];
+      ret[prop][0] = this.getUnitSize(val[prop][0], unit_size);
+      ret[prop][1] = this.getUnitSize(val[prop][1], unit_size);
     }
-    if(typeof obj == "object"){
-      var ret = {};
-      var callee = arguments.callee;
-      for(var prop in obj){
-	ret[prop] = callee(obj[prop], font_size, max_size);
-      }
-      return ret;
+    return ret;
+  },
+  getEdgeSize : function(val, unit_size){
+    var ret = {};
+    for(var prop in val){
+      ret[prop] = this.getUnitSize(val[prop], unit_size);
     }
-    return UnitSize.mapBoxSize(obj, font_size, max_size);
+    return ret;
   }
 };
 
@@ -1428,25 +1435,6 @@ var Css = {
   },
   addNehanTocLinkPrefix : function(name){
     return "nehan-toc-link-" + name;
-  },
-  toVenderizedList:function(prop){
-    var ret = List.map(Const.cssVenderPrefixes, function(prefix){
-      return [prefix, prop].join("-");
-    });
-    ret.push(prop); // add non vendered prop
-    return ret;
-  },
-  toClassProp: function(cssProp){
-    var parts = cssProp.split("-");
-    return parts[0] + List.fold(parts.slice(1), "", function(ret, rest){
-      return ret + Utils.capitalize(rest);
-    });
-  },
-  sortCorner : function(dir1, dir2){
-    var order = {top:0, bottom:1, left:2, right:3};
-    return [dir1, dir2].sort(function (c1, c2){
-      return order[c1] - order[c2];
-    });
   }
 };
 
@@ -1589,27 +1577,35 @@ var Selectors = (function(){
     selectors.push(new Selector(selector_key, Style[selector_key]));
   }
 
-  var is_edge_prop = function(prop){
-    return (prop === "margin" ||
-	    prop === "padding" ||
-	    prop === "border-width" ||
-	    prop === "border-radius");
+  var merge_edge = function(edge1, edge2, prop){
+    // conv both edge to standard edge format({before:x, end:x, after:x, start:x}).
+    var std_edge1 = EdgeParser.normalize(edge1, prop);
+    var std_edge2 = EdgeParser.normalize(edge2, prop);
+    return Args.copy(std_edge1, std_edge2);
   };
 
-  var merge_edge = function(edge1, edge2){
-    // conv both edge to standard edge format({before:x, end:x, after:x, start:x}).
-    var std_edge1 = EdgeParser.parse(edge1);
-    var std_edge2 = EdgeParser.parse(edge2);
-    return Args.copy(std_edge1, std_edge2);
+  var merge_corner = function(corner1, corner2, prop){
+    var std_corner1 = CornerParser.normalize(corner1, prop);
+    var std_corner2 = CornerParser.normalize(corner2, prop);
+    return Args.copy(std_corner1, std_corner2);
   };
 
   var merge = function(dst, obj){
     for(var prop in obj){
-      // edge value is constructed with multiple values, so need to merge.
-      if(is_edge_prop(prop)){
-	dst[prop] = dst[prop]? merge_edge(dst[prop], obj[prop]) : obj[prop];
-      } else {
+      switch(prop){
+      case "margin":
+      case "padding":
+      case "border-width":
+      case "border-color":
+      case "border-style":
+	dst[prop] = merge_edge(dst[prop] || {}, obj[prop], prop);
+	break;
+      case "border-radius":
+	dst[prop] = merge_corner(dst[prop] || {}, obj[prop], prop);
+	break;
+      default:
 	dst[prop] = obj[prop];
+	break;
       }
     }
     return dst;
@@ -1923,8 +1919,8 @@ var Tag = (function (){
       var width = this.getAttr("width");
       var height = this.getAttr("height");
       if(width && height){
-	width = UnitSize.mapBoxSize(width, font_size, max_size);
-	height = UnitSize.mapBoxSize(height, font_size, max_size);
+	width = UnitSize.getBoxSize(width, font_size, max_size);
+	height = UnitSize.getBoxSize(height, font_size, max_size);
 	return new BoxSize(width, height);
       }
       // if img tag size not defined, treat it as character size icon.
@@ -1951,20 +1947,20 @@ var Tag = (function (){
       }
       var edge = new BoxEdge();
       if(padding){
-	var padding_size = UnitSize.parseEdgeSize(padding, font_size, max_measure);
+	var padding_size = UnitSize.getEdgeSize(padding, font_size);
 	edge.setSize("padding", flow, padding_size);
       }
       if(margin){
-	var margin_size = UnitSize.parseEdgeSize(margin, font_size, max_measure);
+	var margin_size = UnitSize.getEdgeSize(margin, font_size);
 	edge.setSize("margin", flow, margin_size);
       }
       if(border_width){
-	border_width = UnitSize.parseEdgeSize(border_width, font_size, max_measure);
-	edge.setSize("border", flow, border_width);
+	var border_width_size = UnitSize.getEdgeSize(border_width, font_size);
+	edge.setSize("border", flow, border_width_size);
       }
       if(border_radius){
-	border_radius = UnitSize.parseEdgeSize(border_radius, font_size, max_measure);
-	edge.setBorderRadius(flow, border_radius);
+	var border_radius_size = UnitSize.getCornerSize(border_radius, font_size);
+	edge.setBorderRadius(flow, border_radius_size);
       }
       if(border_color){
 	edge.setBorderColor(flow, border_color);
@@ -3065,10 +3061,12 @@ var ListStyleType = (function(){
       }
       return Cardinal.getStringByName(this.type, decimal);
     },
-    getMarker : function(count){
+    getMarkerHtml : function(count){
       var text = this.getMarkerText(count);
       if(this.isZenkaku()){
-	return Html.tagWrap("span", text, {"class":"nehan-tcy"});
+	return Html.tagWrap("span", text, {
+	  "class":"nehan-tcy"
+	});
       }
       return text;
     },
@@ -3130,14 +3128,18 @@ var ListStyleImage = (function(){
 
   ListStyleImage.prototype = {
     getMarkerAdvance : function(){
-      return Layout.fontSize;
+      return this.image.width || Layout.fontSize;
     },
-    getMarker : function(){
+    getMarkerHtml : function(count){
       var font_size = Layout.fontSize;
+      var url = this.image.url;
+      var width = this.image.width || font_size;
+      var height = this.image.height || font_size;
       return Html.tagSingle("img", {
-	"src":this.imageURL,
-	"width":font_size,
-	"height":font_size
+	"src":url,
+	"class":"nehan-list-image",
+	"width":width,
+	"height":height
       });
     }
   };
@@ -3163,11 +3165,11 @@ var ListStyle = (function(){
     isImageList : function(){
       return (this.image !== null);
     },
-    getMarker : function(count){
+    getMarkerHtml : function(count){
       if(this.image !== null){
-	return this.image.getMarker();
+	return this.image.getMarkerHtml(count);
       }
-      return this.type.getMarker(count);
+      return this.type.getMarkerHtml(count);
     },
     getMarkerAdvance : function(font_size, item_count){
       if(this.image){
@@ -3422,12 +3424,17 @@ var BoxRect = {
     return fn(obj);
   },
   setValue : function(dst, flow, value){
-    if(value instanceof Array){
-      this.setByArray(dst, flow, value);
-    } else if(typeof value === "object"){
-      this.setByObject(dst, flow, value);
-    } else {
-      this.setAll(dst, value);
+    if(typeof value.start != "undefined"){
+      this.setStart(dst, flow, value.start);
+    }
+    if(typeof value.end != "undefined"){
+      this.setEnd(dst, flow, value.end);
+    }
+    if(typeof value.before != "undefined"){
+      this.setBefore(dst, flow, value.before);
+    }
+    if(typeof value.after != "undefined"){
+      this.setAfter(dst, flow, value.after);
     }
     return dst;
   },
@@ -3442,53 +3449,22 @@ var BoxRect = {
   },
   setEnd : function(dst, flow, value){
     dst[flow.getPropEnd()] = value;
-  },
-  setByArray : function(dst, flow, value){
-    switch(value.length){
-    case 1:
-      this.setAll(dst, value[0]);
-      break;
-    case 2:
-      this.setBefore(dst, flow, value[0]);
-      this.setAfter(dst, flow, value[0]);
-      this.setStart(dst, flow, value[1]);
-      this.setEnd(dst, flow, value[1]);
-      break;
-    case 3:
-      this.setBefore(dst, flow, value[0]);
-      this.setEnd(dst, flow, value[1]);
-      this.setStart(dst, flow, value[1]);
-      this.setAfter(dst, flow, value[2]);
-      break;
-    case 4:
-      this.setBefore(dst, flow, value[0]);
-      this.setEnd(dst, flow, value[1]);
-      this.setAfter(dst, flow, value[2]);
-      this.setStart(dst, flow, value[3]);
-      break;
-    }
-  },
-  setByObject : function(dst, flow, value){
-    if(typeof value.start != "undefined"){
-      this.setStart(dst, flow, value.start);
-    }
-    if(typeof value.end != "undefined"){
-      this.setEnd(dst, flow, value.end);
-    }
-    if(typeof value.before != "undefined"){
-      this.setBefore(dst, flow, value.before);
-    }
-    if(typeof value.after != "undefined"){
-      this.setAfter(dst, flow, value.after);
-    }
-  },
-  setAll : function(dst, value){
-    List.iter(Const.cssBoxDirs, function(dir){
-      dst[dir] = value;
-    });
   }
 };
 
+
+var BoxCorner = {
+  sortCornerDirection : function(dir1, dir2){
+    var order = {top:0, bottom:1, left:2, right:3};
+    return [dir1, dir2].sort(function (c1, c2){
+      return order[c1] - order[c2];
+    });
+  },
+  getCornerName : function(dir1, dir2){
+    var dirs = this.sortCornerDirection(dir1, dir2);
+    return [dirs[0], Utils.capitalize(dirs[1])].join("");
+  }
+};
 
 var Edge = Class.extend({
   init : function(type){
@@ -3584,36 +3560,128 @@ var EdgeParser = (function(){
     }
   };
 
-  var parse_object = function(obj){
-    return Args.merge({}, {before:0, end:0, after:0, start:0}, obj);
+  var parse_object = function(obj, def_value){
+    return Args.merge({}, {
+      before:def_value,
+      end:def_value,
+      after:def_value,
+      start:def_value
+    }, obj);
   };
 
-  var normalize = function(src){
-    return src.replace(/\s+/g, " ").replace(/\n/g, "").replace(/;/g, "");
-  };
-  
-  var parse_string = function(str){
-    str = normalize(str);
+  var parse_oneliner = function(str){
+    str = str.replace(/\s+/g, " ").replace(/\n/g, "").replace(/;/g, "");
     if(str.indexOf(" ") < 0){
       return parse([str]);
     }
-    return parse(str.split(" "));
+    return parse_array(str.split(" "));
   };
 
-  var parse = function(obj){
+  var parse = function(obj, def_value){
     if(obj instanceof Array){
       return parse_array(obj);
     }
     switch(typeof obj){
-    case "object": return parse_object(obj);
-    case "string": return parse_string(obj);
+    case "object": return parse_object(obj, def_value);
+    case "string": return parse_oneliner(obj); // one-liner source
     case "number": return parse_array([obj]);
     default: return null;
     }
   };
+
+  var defaults = {
+    "border-width":0,
+    "margin":0,
+    "padding":0,
+    "border-radius":0,
+    "border-style":"none",
+    "border-color":"black"
+  };
+
   return {
-    parse : function(obj){
-      return parse(obj);
+    normalize : function(obj, prop){
+      return parse(obj, defaults[prop] || 0);
+    }
+  };
+})();
+
+var CornerParser = (function(){
+  var parse_array = function(array){
+    switch(array.length){
+    case 1:
+      return {"start-before":array[0], "end-before":array[0], "end-after":array[0], "start-after":array[0]};
+    case 2:
+      return {"start-before":array[0], "end-before":array[1], "end-after":array[0], "start-after":array[1]};
+    case 3:
+      return {"start-before":array[0], "end-before":array[1], "end-after":array[2], "start-after":array[1]};
+    case 4:
+      return {"start-before":array[0], "end-before":array[1], "end-after":array[2], "start-after":array[3]};
+    default:
+      return null;
+    }
+  };
+
+  var normalize_oneliner = function(str){
+    return Utils.trim(str)
+      .replace(/\s+/g, " ")
+      .replace(/\n/g, "")
+      .replace(/;/g, "");
+  };
+
+  var parse_value_2d = function(str){
+    str = str.normalize_oneliner(str);
+    if(str.indexOf(" ") < 0){
+      return [str, str];
+    }
+    return str.split(" ");
+  };
+
+  var parse_object = function(obj, def_value){
+    return Args.merge({}, {
+      "start-before":def_value,
+      "end-before":def_value,
+      "end-after":def_value,
+      "start-after":def_value
+    }, obj);
+  };
+
+  var parse_oneliner_dim = function(str){
+    str = normalize_oneliner(str);
+    if(str.indexOf(" ") < 0){
+      return [str];
+    }
+    return str.split(" ").slice(0, 4);
+  };
+
+  var parse_oneliner = function(str){
+    if(str.indexOf("/") < 0){
+      return arguments.callee([str, str].join("/"));
+    }
+    var hv = str.split("/");
+    var h_values = parse_oneliner_dim(hv[0]);
+    var v_values = parse_oneliner_dim(hv[1]);
+    return parse_array(List.zip(h_values, v_values));
+  };
+
+  var parse = function(obj, def_value){
+    if(obj instanceof Array){
+      return parse_array(obj);
+    }
+    switch(typeof obj){
+    case "object": return parse_object(obj, def_value);
+    case "string": return parse_oneliner(obj); // one-liner source
+    case "number": return parse_array([[obj, obj]]);
+    default: return null;
+    }
+  };
+
+  var defaults = {
+    "border-radius":[0, 0]
+  };
+
+  return {
+    normalize : function(obj, prop){
+      return parse(obj, defaults[prop] || [0, 0]);
     }
   };
 })();
@@ -3625,51 +3693,15 @@ var Radius2d = (function(){
   }
 
   Radius2d.prototype = {
-    setSize : function(){
-      if(arguments.length == 1){
-	var size = arguments[0];
-	if(size instanceof Array){
-	  this.setSizeByArray(size);
-	} else if(typeof size == "object"){
-	  this.setSizeByObj(size);
-	} else {
-	  this.hori = this.vert = size;
-	}
-      } else if(arguments.length === 2){
-	this.hori = arguments[0];
-	this.vert = arguments[1];
-      } else {
-	this.hori = this.vert = 0;
-      }
+    setSize : function(value){
+      this.hori = value[0];
+      this.vert = value[1];
     },
-    setSizeByObj : function(size){
-      if(typeof size.hori != "undefined"){
-	this.hori = size.hori;
-      }
-      if(typeof size.vert != "undefined"){
-	this.vert = size.vert;
-      }
+    getCssValueHori : function(){
+      return this.hori + "px";
     },
-    setSizeByArray : function(size){
-      switch(size.length){
-      case 1:
-	this.hori = this.vert = size[0];
-	break;
-      case 2:
-	this.hori = size[0];
-	this.vert = size[1];
-	break;
-      }
-    },
-    getCssValue : function(){
-      var ret = [];
-      if(this.hori == this.vert){
-	return this.hori + "px";
-      }
-      return [this.hori + "px", this.vert + "px"].join(" ");
-    },
-    isEnable : function(){
-      return (this.hori > 0 || this.vert > 0);
+    getCssValueVert : function(){
+      return this.vert + "px";
     }
   };
   
@@ -3678,49 +3710,48 @@ var Radius2d = (function(){
 
 var BorderRadius = (function(){
   function BorderRadius(){
-    this.borderTopLeftRadius = new Radius2d();
-    this.borderTopRightRadius = new Radius2d();
-    this.borderBottomLeftRadius = new Radius2d();
-    this.borderBottomRightRadius = new Radius2d();
+    this.topLeft = new Radius2d();
+    this.topRight = new Radius2d();
+    this.bottomRight = new Radius2d();
+    this.bottomLeft = new Radius2d();
   }
 
   BorderRadius.prototype = {
+    getArray : function(){
+      return [
+	this.topLeft,
+	this.topRight,
+	this.bottomRight,
+	this.bottomLeft
+      ];
+    },
+    getCssValueHori : function(){
+      return List.map(this.getArray(), function(radius){
+	return radius.getCssValueHori();
+      }).join(" ");
+    },
+    getCssValueVert : function(){
+      return List.map(this.getArray(), function(radius){
+	return radius.getCssValueVert();
+      }).join(" ");
+    },
+    getCssValue : function(){
+      return [this.getCssValueHori(), this.getCssValueVert()].join("/");
+    },
     getCss : function(){
-      var self = this;
       var css = {};
-      List.iter(Const.cssBorderRadius, function(css_radius_prop){
-	var radius = self[Css.toClassProp(css_radius_prop)];
-	if(radius.isEnable()){
-	  var radius_css_value = radius.getCssValue();
-	  List.iter(Css.toVenderizedList(css_radius_prop), function(css_vender_radius_prop){
-	    css[css_vender_radius_prop] = radius_css_value;
-	  });
-	}
+      var css_value = this.getCssValue();
+      List.iter(Const.cssVenderPrefixes, function(prefix){
+	var prop = [prefix, "border-radius"].join("-");
+	css[prop] = css_value;
       });
       return css;
     },
-    getRadius : function(dir1, dir2){
-      var corner = Css.sortCorner(dir1, dir2).join("-");
-      var prop = ["border", corner, "radius"].join("-");
-      var class_prop = Css.toClassProp(prop);
-      return this[class_prop];
-    },
-    setAll : function(value){
-      this.borderTopLeftRadius.setSize(value);
-      this.borderTopRightRadius.setSize(value);
-      this.borderBottomLeftRadius.setSize(value);
-      this.borderBottomRightRadius.setSize(value);
+    getCorner : function(dir1, dir2){
+      var name = BoxCorner.getCornerName(dir1, dir2);
+      return this[name];
     },
     setSize : function(flow, size){
-      if(size instanceof Array){
-	this.setSizeByArray(flow, size);
-      } else if(typeof size == "object"){
-	this.setSizeByObj(flow, size);
-      } else {
-	this.setAll(size);
-      }
-    },
-    setSizeByObj : function(flow, size){
       if(typeof size["start-before"] != "undefined"){
 	this.setStartBefore(flow, size["start-before"]);
       }
@@ -3734,53 +3765,29 @@ var BorderRadius = (function(){
 	this.setEndAfter(flow, size["end-after"]);
       }
     },
-    setSizeByArray : function(flow, size){
-      switch(size.length){
-      case 1:
-	this.setAll(size[0]);
-	break;
-      case 2:
-	this.setStartBefore(flow, size[0]);
-	this.setEndAfter(flow, size[0]);
-	this.setStartAfter(flow, size[1]);
-	this.setEndBefore(flow, size[1]);
-	break;
-      case 3:
-	// 0, 2 is discarded.
-	this.setStartAfter(flow, size[1]);
-	this.setEndBefore(flow, size[1]);
-	break;
-      case 4:
-	this.setStartBefore(flow, size[0]);
-	this.setEndBefore(flow, size[1]);
-	this.setEndAfter(flow, size[2]);
-	this.setStartAfter(flow, size[3]);
-	break;
-      }
-    },
     setStartBefore : function(flow, value){
-      var radius = this.getRadius(flow.getPropStart(), flow.getPropBefore());
+      var radius = this.getCorner(flow.getPropStart(), flow.getPropBefore());
       radius.setSize(value);
     },
     setStartAfter : function(flow, value){
-      var radius = this.getRadius(flow.getPropStart(), flow.getPropAfter());
+      var radius = this.getCorner(flow.getPropStart(), flow.getPropAfter());
       radius.setSize(value);
     },
     setEndBefore : function(flow, value){
-      var radius = this.getRadius(flow.getPropEnd(), flow.getPropBefore());
+      var radius = this.getCorner(flow.getPropEnd(), flow.getPropBefore());
       radius.setSize(value);
     },
     setEndAfter :  function(flow, value){
-      var radius = this.getRadius(flow.getPropEnd(), flow.getPropAfter());
+      var radius = this.getCorner(flow.getPropEnd(), flow.getPropAfter());
       radius.setSize(value);
     },
     clearBefore : function(flow){
-      this.setStartBefore(flow, 0);
-      this.setEndBefore(flow, 0);
+      this.setStartBefore(flow, [0, 0]);
+      this.setEndBefore(flow, [0, 0]);
     },
     clearAfter : function(flow){
-      this.setStartAfter(flow, 0);
-      this.setEndAfter(flow, 0);
+      this.setStartAfter(flow, [0, 0]);
+      this.setEndAfter(flow, [0, 0]);
     }
   };
 
@@ -5389,7 +5396,7 @@ var BlockContext = (function(){
 
   BlockContext.prototype = {
     pushBlock : function(tag){
-      var parent_tag = this.getHead();
+      var parent_tag = this.getHeadTag();
       if(parent_tag){
 	// copy 'inherit' value from parent in 'markup' level.
 	tag.inherit(parent_tag);
@@ -5399,7 +5406,7 @@ var BlockContext = (function(){
     popBlock : function(){
       return this.tagStack.pop();
     },
-    getHead : function(){
+    getHeadTag : function(){
       return this.tagStack.getHead();
     },
     getTagStack : function(){
@@ -5465,9 +5472,6 @@ var InlineContext = (function(){
       }
       return parent.color;
     },
-    getHead : function(){
-      return this.tagStack.getHead();
-    },
     getTagDepth : function(){
       return this.tagStack.getDepth();
     },
@@ -5497,7 +5501,7 @@ var InlineContext = (function(){
       var font_size = tag.getCssAttr("font-size");
       if(font_size){
 	var cur_font_size = this.getFontSize(parent);
-	var new_font_size = UnitSize.mapFontSize(font_size, cur_font_size);
+	var new_font_size = UnitSize.getUnitSize(font_size, cur_font_size);
 	tag.setFontSizeUpdate(new_font_size);
 	this.fontSizeStack.push(new_font_size);
       }
@@ -5706,8 +5710,8 @@ var DocumentContext = (function(){
     getBlockTagStack : function(){
       return this.blockContext.getTagStack();
     },
-    getCurBlock : function(){
-      return this.blockContext.getHead();
+    getCurBlockTag : function(){
+      return this.blockContext.getHeadTag();
     },
     getBlockDepth : function(){
       return this.blockContext.getDepth();
@@ -5866,7 +5870,7 @@ var Collapse = (function(){
     if(border === null){
       return null;
     }
-    var val = UnitSize.parseEdgeSize(border, box.fontSize, box.getContentMeasure());
+    var val = UnitSize.getEdgeSize(border, box.fontSize, box.getContentMeasure());
     if(typeof val == "number"){
       return {before:val, after:val, start:val, end:val};
     }
@@ -6277,7 +6281,7 @@ var TableTagStream = FilteredTagStream.extend({
     return List.map(childs, function(child){
       var size = child.getTagAttr("measure") || child.getTagAttr("width") || 0;
       if(size){
-	return UnitSize.mapBoxSize(size, box.fontSize, box.getContentMeasure());
+	return UnitSize.getBoxSize(size, box.fontSize, box.getContentMeasure());
       }
       return 0;
     });
@@ -6593,7 +6597,7 @@ var BlockGenerator = Class.extend({
     var base_font_size = parent? parent.fontSize : Layout.fontSize;
     var font_size = this.markup.getCssAttr("font-size", "inherit");
     if(font_size != "inherit"){
-      box.fontSize = UnitSize.mapFontSize(font_size, base_font_size);
+      box.fontSize = UnitSize.getUnitSize(font_size, base_font_size);
     }
 
     // set font color
@@ -6645,7 +6649,7 @@ var BlockGenerator = Class.extend({
     }
     var letter_spacing = this.markup.getCssAttr("letter-spacing");
     if(letter_spacing){
-      box.letterSpacing = UnitSize.mapFontSize(letter_spacing, base_font_size);
+      box.letterSpacing = UnitSize.getUnitSize(letter_spacing, base_font_size);
     }
 
     // read other optional styles not affect layouting issue.
@@ -6863,6 +6867,12 @@ var LineContext = (function(){
     },
     isFirstLine : function(){
       return this.lineStartPos === 0;
+    },
+    inheritParentTag : function(tag){
+      var parent_tag = this.context.getCurBlockTag();
+      if(parent_tag){
+	tag.inherit(parent_tag);
+      }
     },
     pushTag : function(tag){
       this.context.pushInlineTag(tag, this.parent);
@@ -7413,7 +7423,7 @@ var InlineGenerator = (function(){
       }
       // token is static size tag
       if(token.hasStaticSize()){
-	return this._yieldStaticInlineBlock(ctx, token);
+	return this._yieldStaticElement(ctx, token);
       }
       // token is inline-block tag
       if(token.isInlineBlock()){
@@ -7423,7 +7433,8 @@ var InlineGenerator = (function(){
       // token is other inline tag
       return this._yieldInlineTag(ctx, token);
     },
-    _yieldStaticInlineBlock : function(ctx, tag){
+    _yieldStaticElement : function(ctx, tag){
+      ctx.inheritParentTag(tag);
       var element = PageGenerator.prototype._yieldStaticElement.call(this, ctx.parent, tag, this.context);
       if(element instanceof Box){
 	element.display = "inline-block";
@@ -7473,6 +7484,7 @@ var InlineGenerator = (function(){
       // single tag does not update tag stack of inline, so just return it.
       // or if tag is already parsed, just return too.
       if(tag.isSingleTag() || tag.parsed){
+	ctx.inheritParentTag(tag);
 	return tag;
       }
       // if inline level edge is defined,
@@ -8123,15 +8135,18 @@ var ListGenerator = ChildPageGenerator.extend({
 
 var InsideListItemGenerator = ChildPageGenerator.extend({
   init : function(markup, parent, context){
-    var marker = parent.listStyle.getMarker(markup.order + 1);
-    markup.content = marker + Const.space + markup.content;
+    var marker = parent.listStyle.getMarkerHtml(markup.order + 1);
+    var marker_html = Html.tagWrap("span", marker, {
+      "class":"nehan-li-marker"
+    });
+    markup.content = marker_html + Const.space + markup.content;
     this._super(markup, context);
   }
 });
 
 var OutsideListItemGenerator = ParallelPageGenerator.extend({
   init : function(markup, parent, context){
-    markup.marker = parent.listStyle.getMarker(markup.order + 1);
+    markup.marker = parent.listStyle.getMarkerHtml(markup.order + 1);
     this._super([
       new ListItemMarkGenerator(markup, context),
       new ListItemBodyGenerator(markup, context)
@@ -9158,7 +9173,7 @@ __exports.createPageGroupStream = function(text, group_size){
   return new PageGroupStream(text, group_size);
 };
 __exports.getStyle = function(selector_key){
-  Selectors.getValue(selector_key);
+  return Selectors.getValue(selector_key);
 };
 __exports.setStyle = function(selector_key, obj) {
   Selectors.setValue(selector_key, obj);

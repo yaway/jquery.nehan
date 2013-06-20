@@ -83,7 +83,7 @@ div, span{
 .nehan-header .nehan-vert-alpha{
   font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック',monospace !important;
 }
-.nehan-inside-marker,
+.nehan-li-marker,
 .nehan-li-marker .nehan-text-line-vert{
   font-family:'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック',monospace !important;
 }
@@ -92,9 +92,10 @@ div, span{
 .nehan-body a{
   word-wrap:normal !important;
 }
+/*
 .nehan-img img{
   vertical-align:bottom;
-}
+}*/
 .nehan-img-char{
   display:block;
 }
