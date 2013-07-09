@@ -53,7 +53,7 @@ var Layout = {
   width: 800,
   height: 580,
   fontSize:16,
-  rubyRate:0.5,
+  rubyRate:0.5, // used when Style.rt["font-size"] not defined.
   boldRate:0.2,
   fontColor:"000000",
   linkColor:"0000FF",
@@ -68,21 +68,28 @@ var Layout = {
     box.textAlign = parent.textAlign;
     box.fontSize = parent.fontSize;
     box.color = parent.color;
+    box.letterSpacing = parent.letterSpacing;
     return box;
   },
-  createStdBox : function(type){
-    var flow = this.getStdBoxFlow();
-    var size = this.getStdPageSize();
+  createTextLine : function(size, parent){
+    return this.createBox(size, parent, "text-line");
+  },
+  createRootBox : function(size, type){
     var box = new Box(size, null, type);
-    box.flow = flow;
+    box.flow = this.getStdBoxFlow();
     box.lineRate = this.lineRate;
     box.textAlign = "start";
     box.fontSize = this.fontSize;
     box.color = new Color(this.fontColor);
+    box.letterSpacing = 0;
     return box;
   },
   getStdPageSize : function(){
     return new BoxSize(this.width, this.height);
+  },
+  getStdMeasure : function(){
+    var flow = this.getStdBoxFlow();
+    return this[flow.getPropMeasure()];
   },
   getStdBoxFlow : function(){
     var flow_name = this[this.direction];
@@ -103,6 +110,20 @@ var Layout = {
   },
   getHoriIndir : function(){
     return this.hori.split("-")[0];
+  },
+  getRubyFontSize : function(base_font_size){
+    var rt = Style.rt || null;
+    var rt_font_size = rt? rt["font-size"] : null;
+    if(rt === null || rt_font_size === null){
+      return Math.floor(this.rubyRate * base_font_size);
+    }
+    return UnitSize.getUnitSize(rt_font_size, base_font_size);
+  },
+  getPaletteFontColor : function(color){
+    if(color.getValue().toLowerCase() !== this.fontColor.toLowerCase()){
+      return color.getPaletteValue();
+    }
+    return this.fontColor;
   }
 };
 
@@ -189,12 +210,10 @@ var Style = {
   },
   "article":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "aside":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "audio":{
@@ -203,7 +222,8 @@ var Style = {
   // tag / b
   //-------------------------------------------------------
   "b":{
-    "display":"inline"
+    "display":"inline",
+    "font-weight":"bold"
   },
   "base":{
   },
@@ -215,7 +235,6 @@ var Style = {
   },
   "blockquote":{
     "display":"block",
-    "child-content":true,
     "section-root":true,
     "margin":{
       "start":"1.5em",
@@ -226,7 +245,6 @@ var Style = {
   },
   "body":{
     "display":"block",
-    "child-content":true,
     "section-root":true
   },
   "br":{
@@ -247,7 +265,6 @@ var Style = {
   "caption":{
     "display":"block",
     "text-align":"center",
-    "child-content":true,
     "margin":{
       "after":"0.5em"
     }
@@ -271,7 +288,6 @@ var Style = {
   },
   "dd":{
     "display":"block",
-    "child-content":true,
     "margin":{
       "start":"1em",
       "end":"1em",
@@ -283,7 +299,6 @@ var Style = {
   },
   "details":{
     "display":"block",
-    "child-content":true,
     "section-root":true
   },
   "dfn":{
@@ -294,16 +309,13 @@ var Style = {
 
     // using div tag with static size, inline html can be embeded.
     //  <div width="100" height="100">embed html</div>
-    "embeddable":true,
-    "child-content":true
+    "embeddable":true
   },
   "dl":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   "dt":{
     "display":"block",
-    "child-content":true,
     "margin":{
       "after":"0.2em"
     }
@@ -326,7 +338,6 @@ var Style = {
   //-------------------------------------------------------
   "fieldset":{
     "display":"block",
-    "child-content":true,
     "section-root":true,
     "padding":{
       "start":"1em",
@@ -341,23 +352,19 @@ var Style = {
   },
   "figure":{
     "display":"block",
-    "child-content":true,
     "section-root":true
   },
   "figcaption":{
     "display":"block",
-    "child-content":true,
     "text-align":"center",
     "font-size": "0.8em"
   },
   "footer":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "form":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   //-------------------------------------------------------
   // tag / h
@@ -365,8 +372,8 @@ var Style = {
   "h1":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
     "font-size":"2.4em",
+    "font-weight":"bold",
     "margin":{
       "after":"0.5em"
     }
@@ -374,8 +381,8 @@ var Style = {
   "h2":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
     "font-size":"2.0em",
+    "font-weight":"bold",
     "margin":{
       "after":"0.75em"
     }
@@ -383,8 +390,8 @@ var Style = {
   "h3":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
     "font-size":"1.6em",
+    "font-weight":"bold",
     "margin":{
       "after":"1em"
     }
@@ -392,8 +399,8 @@ var Style = {
   "h4":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
     "font-size":"1.4em",
+    "font-weight":"bold",
     "margin":{
       "after":"1.25em"
     }
@@ -401,8 +408,8 @@ var Style = {
   "h5":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
     "font-size":"1.0em",
+    "font-weight":"bold",
     "margin":{
       "after":"1.5em"
     }
@@ -410,19 +417,18 @@ var Style = {
   "h6":{
     "display":"block",
     "line-rate":1.4,
-    "child-content":true,
-    "font-size":"1.0em"
+    "font-size":"1.0em",
+    "font-weight":"bold"
   },
   "head":{
-    "child-content":true
   },
   "header":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "hr":{
     "display":"block",
+    "box-sizing":"content-box",
     "single":true,
     "margin":{
       "after":"1em"
@@ -435,8 +441,7 @@ var Style = {
     "border-width":"0px"
   },
   "html":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   //-------------------------------------------------------
   // tag / i
@@ -446,18 +451,13 @@ var Style = {
   },
   "iframe":{
     "display":"block",
-    "child-content":true,
     "embeddable":true
   },
   "ins":{
   },
   "img":{
     "display":"inline",
-    "single":true,
-    "margin":{
-      "before":"0.5em",
-      "after":"0.5em"
-    }
+    "single":true
   },
   "input":{
     "display":"inline",
@@ -480,12 +480,10 @@ var Style = {
   },
   "legend":{
     "display":"block",
-    "line-rate":1.5,
-    "child-content":true
+    "line-rate":1.5
   },
   "li":{
     "display":"block",
-    "child-content":true,
     "margin":{
       "after":"0.6em"
     }
@@ -498,8 +496,7 @@ var Style = {
   // tag / m
   //-------------------------------------------------------
   "main":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   "map":{
   },
@@ -507,8 +504,7 @@ var Style = {
     "display":"inline"
   },
   "menu":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   "meta":{
     "meta":true,
@@ -522,7 +518,6 @@ var Style = {
   //-------------------------------------------------------
   "nav":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "noscript":{
@@ -536,7 +531,6 @@ var Style = {
   },
   "ol":{
     "display":"block",
-    "child-content":true,
     "list-style-image":"none",
     "list-style-position": "outside",
     "list-style-type": "decimal",
@@ -555,7 +549,6 @@ var Style = {
   //-------------------------------------------------------
   "p":{
     "display":"block",
-    "child-content":true,
     "margin":{
       "after":"1.5em"
     }
@@ -570,8 +563,7 @@ var Style = {
   "param":{
   },
   "pre":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   "progress":{
     "display":"inline"
@@ -580,8 +572,7 @@ var Style = {
   // tag / q
   //-------------------------------------------------------
   "q":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   //-------------------------------------------------------
   // tag / r
@@ -593,13 +584,12 @@ var Style = {
     "display":"inline"
   },
   "ruby":{
-    "child-content":true,
-    "font-size":"0.5em",
     "display":"inline"
   },
   "rt":{
-    "display":"inline",
-    "child-content":true
+    "font-size":"0.5em",
+    "line-rate":1.0,
+    "display":"inline"
   },
   //-------------------------------------------------------
   // tag / s
@@ -612,12 +602,10 @@ var Style = {
   },
   "script":{
     "display":"inline",
-    "child-content":true,
     "meta":true
   },
   "section":{
     "display":"block",
-    "child-content":true,
     "section":true
   },
   "select":{
@@ -632,12 +620,12 @@ var Style = {
     "display":"inline"
   },
   "strong":{
-    "display":"inline"
+    "display":"inline",
+    "font-weight":"bold"
   },
   "style":{
     "display":"inline",
-    "meta":true,
-    "child-content":true
+    "meta":true
   },
   "sub":{
     "display":"inine"
@@ -653,7 +641,6 @@ var Style = {
   //-------------------------------------------------------
   "table":{
     "display":"block",
-    "child-content":true,
     "embeddable":true,
     "table-layout":"fixed", // 'auto' not supported yet.
     "border-collapse":"collapse", // 'separate' not supported yet.
@@ -667,13 +654,11 @@ var Style = {
   },
   "tbody":{
     "display":"block",
-    "border-collapse":"inherit",
-    "child-content":true
+    "border-collapse":"inherit"
   },
   "td":{
     "display":"block",
     "border-collapse":"inherit",
-    "child-content":true,
     "section-root":true,
     "border-width":"1px",
     "padding":{
@@ -685,20 +670,17 @@ var Style = {
   },
   "textarea":{
     "display":"inline",
-    "child-content":true,
     "embeddable":true,
     "interactive":true
   },
   "tfoot":{
     "display":"block",
-    "border-collapse":"inherit",
-    "child-content":true
+    "border-collapse":"inherit"
   },
   "th":{
     "display":"block",
     "line-rate":1.4,
     "border-collapse":"inherit",
-    "child-content":true,
     "border-width":"1px",
     "padding":{
       "start":"0.8em",
@@ -709,19 +691,16 @@ var Style = {
   },
   "thead":{
     "display":"block",
-    "border-collapse":"inherit",
-    "child-content":true
+    "border-collapse":"inherit"
   },
   "time":{
     "display":"inline"
   },
   "title":{
-    "meta":true,
-    "child-content":true
+    "meta":true
   },
   "tr":{
-    "display":"block",
-    "child-content":true
+    "display":"block"
   },
   "track":{
   },
@@ -733,7 +712,6 @@ var Style = {
   },
   "ul":{
     "display":"block",
-    "child-content":true,
     "list-style-image":"none",
     "list-style-type":"disc",
     "list-style-position":"outside",
@@ -757,29 +735,6 @@ var Style = {
   "wbr":{
     "display":"inline",
     "single":true
-  },
-  //-------------------------------------------------------
-  // pseudo-elements
-  //-------------------------------------------------------
-  ":before":{
-    "display":"inline-block",
-    "child-content":true,
-    // content of pseudo elements are all escaped,
-    // that is, ruby is also escaped. there are no rubies in pseudo element.
-    // so line-rate is set to 1(text-line only).
-    "line-rate":1
-  },
-  ":after":{
-    "display":"inline-block",
-    "child-content":true,
-    "line-rate":1
-  },
-  ":first-letter":{
-    "display":"inline-block",
-    "child-content":true
-  },
-  ":first-line":{
-    "display":"inline"
   },
   //-------------------------------------------------------
   // rounded corner
@@ -963,34 +918,34 @@ var Style = {
   // text emphasis
   //-------------------------------------------------------
   ".nehan-empha-dot-filled":{
-    "empha-mark":"&#x2022;"
+    "text-emphasis-style":"&#x2022;"
   },
   ".nehan-empha-dot-open":{
-    "empha-mark":"&#x25e6;"
+    "text-emphasis-style":"&#x25e6;"
   },
   ".nehan-empha-circle-filled":{
-    "empha-mark":"&#x25cf;"
+    "text-emphasis-style":"&#x25cf;"
   },
   ".nehan-empha-circle-open":{
-    "empha-mark":"&#x25cb;"
-  },
-  ".nehan-empha-double-circle-open":{
-    "empha-mark":"&#x25ce;"
+    "text-emphasis-style":"&#x25cb;"
   },
   ".nehan-empha-double-circle-filled":{
-    "empha-mark":"&#x25c9;"
+    "text-emphasis-style":"&#x25c9;"
+  },
+  ".nehan-empha-double-circle-open":{
+    "text-emphasis-style":"&#x25ce;"
   },
   ".nehan-empha-triangle-filled":{
-    "empha-mark":"&#x25b2;"
+    "text-emphasis-style":"&#x25b2;"
   },
   ".nehan-empha-triangle-open":{
-    "empha-mark":"&#x25b3;"
+    "text-emphasis-style":"&#x25b3;"
   },
   ".nehan-empha-sesame-filled":{
-    "empha-mark":"&#xfe45;"
+    "text-emphasis-style":"&#xfe45;"
   },
   ".nehan-empha-sesame-open":{
-    "empha-mark":"&#xfe46;"
+    "text-emphasis-style":"&#xfe46;"
   },
   //-------------------------------------------------------
   // nehan tip area
@@ -1010,9 +965,8 @@ var Style = {
   //-------------------------------------------------------
   // other utility classes
   //-------------------------------------------------------
-  ".nehan-drop-caps:first-letter":{
+  ".nehan-drop-caps::first-letter":{
     "display":"block",
-    "flow":"inherit",
     "width":"4em",
     "height":"4em",
     "float":"start",
@@ -1244,6 +1198,12 @@ var List = {
     }
     return ret;
   },
+  last : function(lst, def_val){
+    if(lst.length === 0){
+      return def_val;
+    }
+    return lst[lst.length - 1];
+  },
   zip : function(lst1, lst2){
     var ret = [];
     for(var i = 0, len = Math.min(lst1.length, lst2.length); i < len; i++){
@@ -1421,7 +1381,7 @@ var Const = {
 };
 
 var Css = {
-  attr : function(args){
+  toString : function(args){
     var tmp = [];
     for(var prop in args){
       tmp.push(prop + ":" + Html.escape(args[prop] + ""));
@@ -1731,11 +1691,21 @@ var Tag = (function (){
     this._inherited = false; // flag to avoid duplicate inheritance
     this.src = src;
     this.name = this._parseName(this.src);
+    this.parent = null;
+    this.contentRaw = content || "";
+
+    // <img width='xx' height='yy'>
+    // => tagAttr = {width:'xx', height:'yy'}
     this.tagAttr = {};
+
+    // <img data-key='xxx'>
+    // -> dataset = {key:'xxx'}
     this.dataset = {};
+
+    // updated when 'inherit' is called.
     this.cssAttrContext = {};
 
-    // this object is updated by Tag::setCssAttr.
+    // updated by 'setCssAttr'.
     // notice that this must be defined before this._parseTagAttr.
     this.cssAttrDynamic = {};
 
@@ -1743,9 +1713,7 @@ var Tag = (function (){
     this.id = this._parseId();
     this.classes = this._parseClasses();
     this.selectors = this._parseSelectors(this.id, this.classes);
-    this.cssAttrStatic = this._parseCssAttr(this.selectors);
-    this.parent = null;
-    this.content = this._parseContent(content || "");
+    this.cssAttrContext = this._parseCssAttr(this.selectors);
   }
 
   // name and value regexp
@@ -1758,9 +1726,6 @@ var Tag = (function (){
   };
   var is_single_tag = function(name){
     return is_style_enable(name, "single");
-  };
-  var is_child_content_tag = function(name){
-    return is_style_enable(name, "child-content");
   };
   var is_section_tag = function(name){
     return is_style_enable(name, "section");
@@ -1784,21 +1749,26 @@ var Tag = (function (){
       }
       var self = this;
       this.parent = parent_tag;
-      this.iterCssAttr(function(prop, val){
-	if(val === "inherit"){
-	  self.setCssAttr(prop, parent_tag.getAttr(prop));
-	}
-      });
       if(parent_tag.getName() != "body"){
+	var prev_selector_size = this.selectors.length;
 	var parent_selectors = parent_tag.getSelectors();
 	var ctx_selectors = this._parseContextSelectors(parent_selectors);
-	this.cssAttrContext = this._parseCssAttr(ctx_selectors);
 	this.selectors = this.selectors.concat(ctx_selectors);
+	if(this.selectors.length > prev_selector_size){
+	  this.cssAttrContext = this._parseCssAttr(this.selectors); // update style by new selector list
+	}
       }
+      // copy 'inherit' value from parent.
+      for(var prop in this.cssAttrContext){
+	if(this.cssAttrContext[prop] === "inherit"){
+	  this.setCssAttr(prop, parent_tag.getAttr(prop));
+	}
+      }
+      this.fullSelectorCacheKey = this._getCssCacheKey(this.selectors);
       this._inherited = true;
     },
-    setContent : function(content){
-      this.content = this._parseContent(content);
+    setContentRaw : function(content_raw){
+      this.contentRaw = content_raw;
     },
     setTagAttr : function(name, value){
       this.tagAttr[name] = value;
@@ -1811,11 +1781,16 @@ var Tag = (function (){
 	this.setCssAttr(prop, obj[prop]);
       }
     },
-    setFontSizeUpdate : function(font_size){
-      this.fontSize = font_size;
+    setFirstChild : function(){
+      var css = this.getPseudoClassCssAttr("first-child");
+      this.setCssAttrs(css);
     },
-    setFontColorUpdate : function(font_color){
-      this.fontColor = font_color;
+    setFirstLetter : function(){
+      var cache_key = this.getDataset("key");
+      var cache = get_css_attr_cache(cache_key);
+      if(cache){
+	this.setCssAttrs(cache);
+      }
     },
     addClass : function(klass){
       this.classes.push(klass);
@@ -1831,11 +1806,11 @@ var Tag = (function (){
     iterCssAttrDynamic : function(fn){
       List.each(this.cssAttrDynamic, fn);
     },
-    iterCssAttrStatic : function(fn){
-      List.each(this.cssAttrStatic, fn);
+    iterCssAttrContext : function(fn){
+      List.each(this.cssAttrContext, fn);
     },
     iterCssAttr : function(fn){
-      this.iterCssAttrStatic(fn);
+      this.iterCssAttrContext(fn);
       this.iterCssAttrDynamic(fn); // dynamic attrs prior to static ones.
     },
     iterAttr : function(fn){
@@ -1848,15 +1823,13 @@ var Tag = (function (){
     getAttr : function(name, def_value){
       return this.getTagAttr(name) || this.getCssAttr(name) || ((typeof def_value !== "undefined")? def_value : null);
     },
-    getPseudoElementName : function(){
-      if(this.isPseudoElementTag()){
-	return this.getName().substring(1);
-      }
-      return "";
+    getPseudoClassCssAttr : function(class_name){
+      var selectors = this._parsePseudoClassSelectors(class_name);
+      return this._parseCssAttr(selectors);
     },
-    getPseudoCssAttr : function(pseudo_name){
-      var pseudo_selectors = this._parsePseudoSelectors(pseudo_name);
-      return this._parseCssAttr(pseudo_selectors);
+    getPseudoElementCssAttr : function(element_name){
+      var selectors = this._parsePseudoElementSelectors(element_name);
+      return this._parseCssAttr(selectors);
     },
     getSelectors : function(){
       return this.selectors;
@@ -1868,14 +1841,14 @@ var Tag = (function (){
       return this.tagAttr[name] || ((typeof def_value !== "undefined")? def_value : null);
     },
     getCssAttr : function(name, def_value){
-      return this.cssAttrDynamic[name] || this.cssAttrContext[name] || this.cssAttrStatic[name] || ((typeof def_value !== "undefined")? def_value : null);
+      return this.cssAttrDynamic[name] || this.cssAttrContext[name] || ((typeof def_value !== "undefined")? def_value : null);
     },
     // used for property that could be contructed with multiple values such as margin(start/end/before/after).
     // for example, when we get "margin" of some target,
     // we read style from default css, and context selector css, and inline style,
     // and we must 'merge' them to get strict style settings.
     getCssAttrs : function(name, def_value){
-      return List.fold([this.cssAttrStatic, this.cssAttrContext, this.cssAttrDynamic], [], function(ret, target){
+      return List.fold([this.cssAttrContext, this.cssAttrDynamic], [], function(ret, target){
 	if(typeof target[name] !== "undefined"){
 	  ret.push(target[name]);
 	}
@@ -1889,7 +1862,14 @@ var Tag = (function (){
       var name = this.getName();
       return this.isClose()? name.slice(1) : name;
     },
+    getContentRaw : function(){
+      return this.contentRaw;
+    },
     getContent : function(){
+      if(this.content){
+	return this.content;
+      }
+      this.content = this._parseContent(this.contentRaw);
       return this.content;
     },
     getCloseTag : function(){
@@ -1903,9 +1883,6 @@ var Tag = (function (){
     },
     getSrc : function(){
       return this.src;
-    },
-    getWrapSrc : function(){
-      return this.src + this.content + this.getCloseSrc();
     },
     getLogicalFloat : function(){
       return this.getCssAttr("float", "none");
@@ -1986,6 +1963,9 @@ var Tag = (function (){
       }
       return this.name == name;
     },
+    isPseudoElement : function(){
+      return this.name === "before" || this.name === "after" || this.name === "first-letter" || this.name === "first-line";
+    },
     isClassAttrEnable : function(){
       return (typeof this.tagAttr["class"] != "undefined");
     },
@@ -2014,27 +1994,22 @@ var Tag = (function (){
       var href = this.getTagAttr("href");
       return this.name === "a" && href && href.indexOf("#") >= 0;
     },
-    isPseudoTag : function(){
-      return this.getName().charAt(0) === ":";
-    },
-    isPseudoElementTag : function(){
-      var name = this.getName();
-      return (name === ":first-letter" || name === ":first-line");
-    },
-    isEmphaTag : function(){
-      return this.getCssAttr("empha-mark") !== null;
-    },
     isEmbeddableTag : function(){
       return this.getCssAttr("embeddable") === true;
     },
     isBlock : function(){
-      if(this.isFloated() || this.isPush() || this.isPull()){
+      // floated block with static size is treated as block level floated box.
+      if(this.hasStaticSize() && this.isFloated()){
+	return true;
+      }
+      if(this.isPush() || this.isPull()){
 	return true;
       }
       return this.getCssAttr("display", "inline") === "block";
     },
     isInline : function(){
-      return this.getCssAttr("display", "inline") === "inline";
+      var display = this.getCssAttr("display", "inline");
+      return (display === "inline" || display === "inline-block");
     },
     isInlineBlock : function(){
       return this.getCssAttr("display", "inline") === "inline-block";
@@ -2046,7 +2021,7 @@ var Tag = (function (){
       if(this.isSingleTag()){
 	return false;
       }
-      return is_child_content_tag(this.getName());
+      return true;
     },
     isTcyTag : function(){
       return this.getCssAttr("text-combine", "") === "horizontal";
@@ -2071,7 +2046,10 @@ var Tag = (function (){
       return name === "end-page" || name === "page-break";
     },
     _getCssCacheKey : function(selectors){
-      return selectors.join(",");
+      return selectors.join("*");
+    },
+    _getPseudoElementCssCacheKey : function(element_name){
+      return [this.fullSelectorCacheKey, element_name].join("::");
     },
     _parseName : function(src){
       return src.replace(/</g, "").replace(/\/?>/g, "").split(/\s/)[0].toLowerCase();
@@ -2117,6 +2095,22 @@ var Tag = (function (){
 	}));
       });
     },
+    // if class_name is "first-child",
+    // and this.selectors is ["p", "p.hoge"]
+    // => ["p:first-child", "p.hoge:first-child"]
+    _parsePseudoClassSelectors : function(class_name){
+      return List.map(this.selectors, function(key){
+	return key + ":" + class_name;
+      });
+    },
+    // if element_name is "before",
+    // and this.selectors is ["p", "p.hoge"]
+    // => ["p::before", "p.hoge::before"]
+    _parsePseudoElementSelectors : function(element_name){
+      return List.map(this.selectors, function(key){
+	return key + "::" + element_name;
+      });
+    },
     _parseCssAttr : function(selectors){
       var cache_key = this._getCssCacheKey(selectors);
       var cache = get_css_attr_cache(cache_key);
@@ -2126,48 +2120,31 @@ var Tag = (function (){
       }
       return cache;
     },
-    // if pseudo_name is "before",
-    // and this.selectors is ["p", "p.hoge"]
-    // => ["p:before", "p.hoge:before"]
-    _parsePseudoSelectors : function(pseudo_name){
-      return List.map(this.selectors, function(key){
-	return key + ":" + pseudo_name;
-      });
-    },
-    _parsePseudoContent : function(pseudo_name){
-      var pseudo_css_attr = this.getPseudoCssAttr(pseudo_name);
-      var content = pseudo_css_attr.content || "";
-      if(content === ""){
+    _parsePseudoElementContentSrc : function(element_name){
+      var css_attr = this.getPseudoElementCssAttr(element_name);
+      if(Obj.isEmpty(css_attr)){
 	return "";
       }
-      return Html.tagWrap(":" + pseudo_name, Html.escape(content));
+      var cache_key = this._getPseudoElementCssCacheKey(element_name);
+      add_css_attr_cache(css_attr);
+      var content = css_attr.content || "";
+      return Html.tagWrap(element_name, content, {"data-key":cache_key});
     },
-    _parsePseudoFirstContent : function(content){
-      var first_letter_style = this.getPseudoCssAttr("first-letter");
-      var first_line_style = this.getPseudoCssAttr("first-line");
-      var first_letter_enable = !Obj.isEmpty(first_letter_style);
-      var first_line_enable = !Obj.isEmpty(first_line_style);
-
-      if(!first_letter_enable && !first_line_enable){
+    _appendFirstLetter : function(content){
+      var css_attr = this.getPseudoElementCssAttr("first-letter");
+      if(Obj.isEmpty(css_attr)){
 	return content;
       }
-      var prefix = [], postfix = [];
-      if(first_line_enable){
-	prefix.push("<:first-line>");
-      }
-      if(first_letter_enable){
-	prefix.push("<:first-letter>");
-	postfix.push("</:first-letter>");
-      }
+      var cache_key = this._getPseudoElementCssCacheKey(this.selectors, "first-letter");
+      add_css_attr_cache(cache_key, css_attr);
       return content.replace(rex_first_letter, function(match, p1, p2, p3){
-	return p1 + prefix.join("") + p3 + postfix.join("");
+	return p1 + Html.tagStart("first-letter", {"data-key":cache_key}) + p3 + "</first-letter>";
       });
     },
-    _parseContent : function(content){
-      var before = this._parsePseudoContent("before");
-      var after = this._parsePseudoContent("after");
-      content = this._parsePseudoFirstContent(content);
-      return before + content + after;
+    _parseContent : function(content_raw){
+      var before = this._parsePseudoElementContentSrc("before");
+      var after = this._parsePseudoElementContentSrc("after");
+      return this._appendFirstLetter([before, content_raw, after].join(""));
     },
     // <img src='/path/to/img' push>
     // => {src:'/path/to/img', push:true}
@@ -2265,15 +2242,88 @@ var Char = (function(){
   var tail_ng = ["\uff08","\x5c","\x28","\u300c","\u3010","\uff3b","\u3014","\x5c","\x5b","\u300e","\uff1c","\u3008","\u300a","\u201c","\u301d"];
 
   Char.prototype = {
-    getCssPadding : function(flow){
+    getCssPadding : function(line){
       var padding = new Padding();
       if(this.paddingStart){
-	padding.setStart(flow, this.paddingStart);
+	padding.setStart(line.flow, this.paddingStart);
       }
       if(this.paddingEnd){
-	padding.setEnd(flow, this.paddingEnd);
+	padding.setEnd(line.flow, this.paddingEnd);
       }
       return padding.getCss();
+    },
+    getCssVertGlyph : function(line){
+      var css = {};
+      var padding_enable = this.isPaddingEnable();
+      css["-webkit-writing-mode"] = "vertical-rl";
+      css["margin-left"] = "auto";
+      css["margin-right"] = "auto";
+      if(this.isKakkoStart()){
+	if(!padding_enable){
+	  css["margin-top"] = "-0.5em";
+	}
+      } else {
+	if(this.getVertScale() < 1){
+	  css.height = "0.5em";
+	}
+	if(padding_enable){
+	  css["margin-bottom"] = "0.5em";
+	}
+      }
+      return css;
+    },
+    getCssVertImgChar : function(line){
+      var css = {};
+      css.display = "block";
+      css.width = line.fontSize + "px";
+      css.height = this.getVertHeight(line.fontSize) + "px";
+      css["margin-left"] = "auto";
+      css["margin-right"] = "auto";
+      if(this.isPaddingEnable()){
+	Args.copy(css, this.getCssPadding(line));
+      }
+      return css;
+    },
+    getCssVertEmphaSrc : function(line){
+      var css = {};
+      return css;
+    },
+    getCssVertEmphaText : function(line){
+      var css = {};
+      css.display = "inline-block";
+      css.width = line.fontSize + "px";
+      css.height = line.fontSize + "px";
+      return css;
+    },
+    getCssHoriEmphaSrc : function(line){
+      var css = {};
+      return css;
+    },
+    getCssHoriEmphaText : function(line){
+      var css = {};
+      css["margin-bottom"] = "-0.5em";
+      return css;
+    },
+    getCssVertLetterSpacing : function(line){
+      var css = {};
+      css["margin-bottom"] = line.letterSpacing + "px";
+      return css;
+    },
+    getCssVertHalfSpaceChar : function(line){
+      var css = {};
+      var half = Math.floor(line.fontSize / 2);
+      css.height = half + "px";
+      css["line-height"] = half + "px";
+      return css;
+    },
+    getCssVertSmallKana : function(){
+      var css = {};
+      css.position = "relative";
+      css.top = "-0.1em";
+      css.right = "-0.12em";
+      css.height = this.bodySize + "px";
+      css["line-height"] = this.bodySize + "px";
+      return css;
     },
     getHoriScale : function(){
       return this.hscale? this.hscale : 1;
@@ -2281,11 +2331,12 @@ var Char = (function(){
     getVertScale : function(){
       return this.vscale? this.vscale : 1;
     },
-    isPaddingEnable : function(){
-      return (typeof this.paddingStart != "undefined" || typeof this.paddingEnd != "undefined");
+    getVertHeight : function(font_size){
+      var vscale = this.getVertScale();
+      return (vscale === 1)? font_size : Math.floor(font_size * vscale);
     },
     hasMetrics : function(){
-      return (typeof this.bodySize != "undefined") && (typeof this.fontSize != "undefined");
+      return (typeof this.bodySize != "undefined");
     },
     getAdvance : function(flow, letter_spacing){
       return this.bodySize + this.getPaddingSize() + letter_spacing;
@@ -2302,7 +2353,6 @@ var Char = (function(){
     setMetrics : function(flow, font_size, is_bold){
       var is_vert = flow.isTextVertical();
       var step_scale = is_vert? this.getVertScale() : this.getHoriScale();
-      this.fontSize = font_size;
       this.bodySize = (step_scale != 1)? Math.floor(font_size * step_scale) : font_size;
       if(this.spaceRateStart){
 	this.paddingStart = Math.floor(this.spaceRateStart * font_size);
@@ -2474,6 +2524,12 @@ var Char = (function(){
     getImgSrc : function(color){
       return [Layout.fontImgRoot, this.img, color + ".png"].join("/");
     },
+    isPaddingEnable : function(){
+      return (typeof this.paddingStart != "undefined" || typeof this.paddingEnd != "undefined");
+    },
+    isVertGlyphEnable : function(){
+      return !this.isTenten() && Config.useVerticalGlyphIfEnable && Env.isVerticalGlyphEnable;
+    },
     isTenten : function(){
       return this.img && this.img === "tenten";
     },
@@ -2523,6 +2579,22 @@ var Word = (function(){
   }
 
   Word.prototype = {
+    getCssVertTrans : function(line){
+      var css = {};
+      css["letter-spacing"] = line.letterSpacing + "px";
+      css.width = line.fontSize + "px";
+      css.height = this.bodySize + "px";
+      css["margin-left"] = css["margin-right"] = "auto";
+      return css;
+    },
+    getCssVertTransIE : function(line){
+      var css = {};
+      css["float"] = "left";
+      css["writing-mode"] = "tb-rl";
+      css["letter-spacing"] = line.letterSpacing + "px";
+      css["line-height"] = line.fontSize + "px";
+      return css;
+    },
     getCharCount : function(){
       return 1; // word is count by 1 character.
     },
@@ -2530,10 +2602,9 @@ var Word = (function(){
       return this.bodySize + letter_spacing * this.getLetterCount();
     },
     hasMetrics : function(){
-      return (typeof this.bodySize != "undefined") && (typeof this.fontSize != "undefined");
+      return (typeof this.bodySize !== "undefined");
     },
     setMetrics : function(flow, font_size, is_bold){
-      this.fontSize = font_size;
       this.bodySize = this.data.length * Math.floor(font_size / 2);
       if(is_bold){
 	var bold_rate = Layout.boldRate;
@@ -2550,8 +2621,8 @@ var Word = (function(){
       return this._devided;
     },
     // devide word by measure size and return first half of word.
-    cutMeasure : function(measure){
-      var half_size = Math.floor(this.fontSize / 2);
+    cutMeasure : function(font_size, measure){
+      var half_size = Math.floor(font_size / 2);
       var this_half_count = Math.floor(this.bodySize / half_size);
       var measure_half_count = Math.floor(measure / half_size);
       if(this_half_count <= measure_half_count){
@@ -2583,10 +2654,9 @@ var Tcy = (function(){
       return this.bodySize + letter_spacing;
     },
     hasMetrics : function(){
-      return (typeof this.bodySize != "undefined") && (typeof this.fontSize != "undefined");
+      return (typeof this.bodySize != "undefined");
     },
     setMetrics : function(flow, font_size, is_bold){
-      this.fontSize = font_size;
       this.bodySize = font_size;
     }
   };
@@ -2600,44 +2670,65 @@ var Ruby = (function(){
     this._type = "ruby";
     this.rbs = rbs;
     this.rt = rt;
+    this.padding = new Padding();
   }
 
   Ruby.prototype = {
     hasMetrics : function(){
-      return (typeof this.advanceSize != "undefined");
+      return (typeof this.advanceSize !== "undefined");
     },
     getAdvance : function(flow){
       return this.advanceSize;
     },
-    getExtent : function(){
-      return this.baseFontSize;
-    },
-    getFontSize : function(){
-      return this.baseFontSize;
+    getExtent : function(font_size){
+      return 3 * this.rubyFontSize + font_size;
     },
     getRbs : function(){
       return this.rbs;
     },
+    getRtString : function(){
+      return this.rt? this.rt.getContent() : "";
+    },
     getRtFontSize : function(){
       return this.rubyFontSize;
     },
-    getRtString : function(){
-      return this.rt? this.rt.content : "";
-    },
-    getCss : function(ruby_line){
+    getCssVertRuby : function(line){
       var css = {};
-      css.position = "absolute";
-      css["font-size"] = this.rubyFontSize + "px";
-      css[ruby_line.getPropStart()] = this.startPos + "px";
-      css[ruby_line.getTextSide()] = this._getBaseLineOffset(ruby_line) + "px";
+      css["margin-left"] = Math.floor((line.maxExtent - line.fontSize) / 2) + "px";
+      css[line.flow.getPropExtent()] = this.getExtent(line.fontSize) + "px";
+      css[line.flow.getPropMeasure()] = this.getAdvance() + "px";
       return css;
     },
-    setStartPos : function(start_pos){
-      this.startPos = start_pos;
+    getCssHoriRuby : function(line){
+      var css = {};
+      css.display = "inline-block";
+      return css;
+    },
+    getCssVertRt : function(line){
+      var css = {};
+      css["float"] = "left";
+      return css;
+    },
+    getCssHoriRt : function(line){
+      var css = {};
+      css["font-size"] = css["line-height"] = this.getRtFontSize() + "px";
+      css["vertical-align"] = "bottom";
+      return css;
+    },
+    getCssVertRb : function(line){
+      var css = {};
+      css["float"] = "left";
+      Args.copy(css, this.padding.getCss());
+      return css;
+    },
+    getCssHoriRb : function(line){
+      var css = {};
+      Args.copy(css, this.padding.getCss());
+      css["text-align"] = "center";
+      return css;
     },
     setMetrics : function(flow, font_size, letter_spacing){
-      this.baseFontSize = font_size;
-      this.rubyFontSize = Math.floor(font_size * Layout.rubyRate);
+      this.rubyFontSize = Layout.getRubyFontSize(font_size);
       var advance_rbs = List.fold(this.rbs, 0, function(ret, rb){
 	rb.setMetrics(flow, font_size);
 	return ret + rb.getAdvance(flow, letter_spacing);
@@ -2647,33 +2738,11 @@ var Ruby = (function(){
       if(advance_rt > advance_rbs){
 	var ctx_space = Math.ceil((advance_rt - advance_rbs) / 2);
 	if(this.rbs.length > 0){
-	  this.rbs[0].paddingStart = ctx_space;
-	  this.rbs[this.rbs.length - 1].paddingEnd = ctx_space;
+	  this.padding.setStart(flow, ctx_space);
+	  this.padding.setEnd(flow, ctx_space);
 	}
 	this.advanceSize += ctx_space + ctx_space;
       }
-    },
-    // calc baseline offset of this ruby,
-    // bacause sometimes size of each ruby are different.
-    _getBaseLineOffset : function(ruby_line){
-      if(ruby_line.isTextVertical()){
-	return this._getBaseLineOffsetVert(ruby_line);
-      }
-      return this._getBaseLineOffsetHori(ruby_line);
-    },
-    _getBaseLineOffsetVert : function(ruby_line){
-      var line_space = ruby_line.getBodyLineContentExtent() - this.baseFontSize;
-      var total_rate = 1.0 + ruby_line.lineRate;
-      var offset = Math.floor(total_rate * Layout.rubyRate * line_space / 2);
-      if(offset > 0){
-	return -offset;
-      }
-      return 0;
-    },
-    _getBaseLineOffsetHori : function(ruby_line){
-      var line_height = ruby_line.getContentExtent();
-      var line_space = line_height - this.rubyFontSize;
-      return -Math.floor(line_space / 2);
     }
   };
 
@@ -2681,82 +2750,26 @@ var Ruby = (function(){
 })();
 
 
-var EmphaChar = (function(){
-  function EmphaChar(opt){
-    this.data = opt.data || "&#x2022";
-    this.startPos = opt.startPos || 0;
-    this.parent = opt.parent;
-    this.fontSize = this.parent.fontSize;
-  }
-
-  EmphaChar.prototype = {
-    getCss : function(flow){
-      var css = {};
-      css.position = "absolute";
-      css.width = css.height = this.fontSize + "px";
-      css.display = flow.isTextVertical()? "block" : "inline-block";
-      css["text-align"] = "center";
-      css[flow.getPropStart()] = this.startPos + "px";
-      if(Env.isIE && flow.isTextVertical()){
-	css.left = "50%";
-	css["margin-left"] = (-Math.floor(this.fontSize / 2)) + "px";
-      }
-      return css;
-    },
-    getAdvance : function(flow){
-      return this.parent.getAdvance(flow);
-    }
-  };
-
-  return EmphaChar;
-})();
-
-
 var Rgb = (function(){
-  // 256(8 * 8 * 4) color palette scales.
-  var RG_PALETTE = [0, 36, 73, 109, 146, 182, 219, 255];
-  var B_PALETTE = [0, 85, 170, 255];
-
   function Rgb(value){
     this.value = String(value);
-    var red = parseInt(this.value.substring(0,2), 16);
-    var green = parseInt(this.value.substring(2,4), 16);
-    var blue = parseInt(this.value.substring(4,6), 16);
-
-    // color values defined in nehan palette.
-    // we use this value for img characters.
-    var palette_red = this._findPalette(red, RG_PALETTE);
-    var palette_green = this._findPalette(green, RG_PALETTE);
-    var palette_blue = this._findPalette(blue, B_PALETTE);
-
-    this.paletteValue = [
-      this._makeHexStr(palette_red),
-      this._makeHexStr(palette_green),
-      this._makeHexStr(palette_blue)
-    ].join("");
+    this.red = parseInt(this.value.substring(0,2), 16);
+    this.green = parseInt(this.value.substring(2,4), 16);
+    this.blue = parseInt(this.value.substring(4,6), 16);
   }
   
   Rgb.prototype = {
+    getRed : function(){
+      return this.red;
+    },
+    getGreen : function(){
+      return this.green;
+    },
+    getBlue : function(){
+      return this.blue;
+    },
     getColorValue : function(){
       return this.value;
-    },
-    getPaletteValue : function(){
-      return this.paletteValue;
-    },
-    _makeHexStr : function(ival){
-      var str = ival.toString(16);
-      if(str.length <= 1){
-	return "0" + str;
-      }
-      return str;
-    },
-    _findPalette : function(ival, palette){
-      if(List.exists(palette, Closure.eq(ival))){
-	return ival;
-      }
-      return List.minobj(palette, function(pval){
-	return Math.abs(pval - ival);
-      });
     }
   };
 
@@ -2765,23 +2778,26 @@ var Rgb = (function(){
 
 var Color = (function(){
   function Color(value){
-    this.value = Colors.get(value);
+    this.setValue(value);
   }
 
   Color.prototype = {
-    getCss : function(){
-      var css = {};
-      css.color = this.getCssValue();
-      return css;
+    setValue : function(value){
+      this.value = Colors.get(value);
     },
     getValue : function(){
       return this.value;
     },
-    getPaletteValue : function(){
-      return (new Rgb(this.value)).getPaletteValue();
-    },
     getCssValue : function(){
       return (this.value === "transparent")? this.value : "#" + this.value;
+    },
+    getRgb : function(){
+      return new Rgb(this.value);
+    },
+    getCss : function(){
+      var css = {};
+      css.color = this.getCssValue();
+      return css;
     }
   };
 
@@ -2944,6 +2960,46 @@ var Colors = (function(){
 	return value[0] + value[0] + value[1] + value[1] + value[2] + value[2];
       }
       return value;
+    }
+  };
+})();
+
+
+var Palette = (function(){
+  // 256(8 * 8 * 4) color palette scales.
+  var RG_PALETTE = [0, 36, 73, 109, 146, 182, 219, 255];
+  var B_PALETTE = [0, 85, 170, 255];
+
+  var make_hex_str = function(ival){
+    var str = ival.toString(16);
+    if(str.length <= 1){
+      return "0" + str;
+    }
+    return str;
+  };
+
+  var find_palette = function(ival, palette){
+    if(List.exists(palette, Closure.eq(ival))){
+      return ival;
+    }
+    return List.minobj(palette, function(pval){
+      return Math.abs(pval - ival);
+    });
+  };
+
+  return {
+    // search and return color value defined in nehan palette.
+    // we use this value for img characters.
+    getColor : function(rgb){
+      var palette_red = find_palette(rgb.getRed(), RG_PALETTE);
+      var palette_green = find_palette(rgb.getGreen(), RG_PALETTE);
+      var palette_blue = find_palette(rgb.getBlue(), B_PALETTE);
+
+      return [
+	make_hex_str(palette_red),
+	make_hex_str(palette_green),
+	make_hex_str(palette_blue)
+      ].join("");
     }
   };
 })();
@@ -3157,6 +3213,7 @@ var ListStyle = (function(){
     this.type = new ListStyleType(opt.type || "none");
     this.position = new ListStylePos(opt.position || "outside");
     this.image = (opt.image !== "none")? new ListStyleImage(opt.image) : null;
+    this.format = opt.format || null;
   }
 
   ListStyle.prototype = {
@@ -3170,6 +3227,9 @@ var ListStyle = (function(){
       return (this.image !== null);
     },
     getMarkerHtml : function(count){
+      if(this.format !== null){
+	return (typeof this.format === "function")? this.format(count) : this.format;
+      }
       if(this.image !== null){
 	return this.image.getMarkerHtml(count);
       }
@@ -3295,14 +3355,10 @@ var BoxFlow = (function(){
       return this.inflow.isValid() && this.blockflow.isValid();
     },
     isTextLineFirst : function(){
-      return !this.isRubyLineFirst();
-    },
-    isRubyLineFirst : function(){
-      // vertical-lr is text-line first.
-      if(this.inflow.isVertical() && this.blockflow.isLeftToRight()){
-	return false;
+      if(this.isTextVertical() && this.blockflow.isLeftToRight()){
+	return true;
       }
-      return true;
+      return false;
     },
     isBlockflowVertical : function(){
       return this.blockflow.isVertical();
@@ -3330,12 +3386,6 @@ var BoxFlow = (function(){
       case "after":
 	return this.getPropAfter();
       }
-    },
-    getTextSide : function(){
-      if(this.isTextLineFirst()){
-	return this.blockflow.getPropBefore();
-      }
-      return this.blockflow.getPropAfter();
     },
     getPropStart : function(){
       return this.inflow.getPropStart();
@@ -3469,6 +3519,73 @@ var BoxCorner = {
     return [dirs[0], Utils.capitalize(dirs[1])].join("");
   }
 };
+
+var BoxSizing = (function(){
+  function BoxSizing(value){
+    // 'margin-box' is original sizing scheme of nehan,
+    // even if margin is included in box size.
+    this.value = value || "margin-box";
+  }
+
+  BoxSizing.prototype = {
+    isContentBox : function(){
+      return this.value === "content-box";
+    },
+    isMarginBox : function(){
+      return this.value === "margin-box";
+    },
+    isBorderBox : function(){
+      return this.value === "border-box";
+    },
+    containPadding : function(){
+      return this.isBorderBox();
+    },
+    containBorder : function(){
+      return this.isBorderBox();
+    },
+    containMargin : function(){
+      return this.isMarginBox();
+    },
+    getCss : function(){
+      var css = {};
+      css["box-sizing"] = "content-box";
+      return css;
+    }
+  };
+
+  return BoxSizing;
+})();
+
+
+var BoxSizings = {
+  "content-box":(new BoxSizing("content-box")),
+  "border-box":(new BoxSizing("border-box")),
+  "margin-box":(new BoxSizing("margin-box")),
+  getByName : function(name){
+    return this[name] || this["margin-box"];
+  }
+};
+
+
+var FontWeight = (function(){
+  function FontWeight(value){
+    this.value = value;
+  }
+
+  FontWeight.prototype = {
+    isBold : function(){
+      return this.value !== "normal" && this.value !== "lighter";
+    },
+    getCss : function(){
+      var css = {};
+      css["font-weight"] = this.value;
+      return css;
+    }
+  };
+
+  return FontWeight;
+})();
+
 
 var Edge = Class.extend({
   init : function(type){
@@ -4141,6 +4258,112 @@ var BoxSize = (function(){
   return BoxSize;
 })();
 
+var TextEmphaStyle = (function(){
+  var empha_marks = {
+    "dot filled":"&#x2022;",
+    "dot open":"&#x25e6;",
+
+    "circle filled":"&#x25cf;",
+    "circle open":"&#x25cb;",
+
+    "double-circle filled":"&#x25c9;",
+    "double-circle open":"&#x25ce;",
+
+    "triangle filled":"&#x25b2;",
+    "triangle open":"&#x25b3;",
+
+    "sesame filled":"&#xfe45;",
+    "sesame open":"&#xfe46;"
+  };
+
+  function TextEmphaStyle(value){
+    this.value = value || "dot filled";
+  }
+
+  TextEmphaStyle.prototype = {
+    setValue : function(value){
+      this.value = value;
+    },
+    getText : function(){
+      return empha_marks[this.value] || this.value || empha_marks["dot filled"];
+    },
+    getCss : function(){
+      var css = {};
+      //return css["text-emphasis-style"] = this.value;
+      return css;
+    }
+  };
+
+  return TextEmphaStyle;
+})();
+
+
+var TextEmphaPos = (function(){
+  function TextEmphaPos(value){
+    this.value = value || "over";
+  }
+
+  TextEmphaPos.prototype = {
+    isEmphaFirst : function(){
+      return this.value === "over" || this.value === "left" || this.value === "before";
+    },
+    setValue : function(value){
+      this.value = value;
+    },
+    getCss : function(line){
+      var css = {};
+      return css;
+    }
+  };
+
+  return TextEmphaPos;
+})();
+
+
+var TextEmpha = (function(){
+  function TextEmpha(){
+    this.pos = new TextEmphaPos();
+    this.style = new TextEmphaStyle();
+    this.color = new Color(Layout.fontColor);
+  }
+
+  TextEmpha.prototype = {
+    setPos : function(value){
+      this.pos.setValue(value);
+    },
+    setStyle : function(value){
+      this.style.setValue(value);
+    },
+    setColor : function(value){
+      this.color.setValue(value);
+    },
+    getText : function(){
+      return this.style.getText();
+    },
+    getExtent : function(font_size){
+      return font_size * 3;
+    },
+    getCssVertEmphaWrap : function(line, chr){
+      var css = {};
+      css["padding-left"] = "0.5em";
+      css.width = this.getExtent(line.fontSize) + "px";
+      css.height = chr.getAdvance(line.fontSize, line.letterSpacing) + "px";
+      return css;
+    },
+    getCssHoriEmphaWrap : function(line, chr){
+      var css = {};
+      css.display = "inline-block";
+      css["padding-top"] = -line.fontSize + "px";
+      css.width = chr.getAdvance(line.fontSize, line.letterSpacing) + "px";
+      css.height = this.getExtent(line.fontSize) + "px";
+      return css;
+    }
+  };
+
+  return TextEmpha;
+})();
+
+
 var LogicalSize = (function(){
   function LogicalSize(measure, extent){
     this.measure = measure;
@@ -4176,6 +4399,9 @@ var BoxChild = (function(){
     get : function(){
       return this.forward.concat(this.normal).concat(this.backward);
     },
+    setNormal : function(elements){
+      this.normal = elements;
+    },
     getLength : function(){
       return this.forward.length + this.normal.length + this.backward.length;
     },
@@ -4209,6 +4435,7 @@ var Box = (function(){
   function Box(size, parent, type){
     this._type = type || "div";
     this.childExtent = 0;
+    this.childMeasure = 0;
     this.size = size;
     this.childs = new BoxChild();
     this.css = {};
@@ -4217,8 +4444,9 @@ var Box = (function(){
   }
 
   Box.prototype = {
-    getCss : function(){
+    getCssBlock : function(){
       var css = this.css;
+      css["font-size"] = this.fontSize + "px";
       Args.copy(css, this.size.getCss());
       if(this.edge){
 	Args.copy(css, this.edge.getCss());
@@ -4229,22 +4457,79 @@ var Box = (function(){
       if(this.color){
 	Args.copy(css, this.color.getCss());
       }
-      if(this.fontSize){
-	css["font-size"] = this.fontSize + "px";
+      if(this.fontWeight){
+	Args.copy(css, this.fontWeight.getCss());
       }
       if(this.letterSpacing && !this.isTextVertical()){
 	css["letter-spacing"] = this.letterSpacing + "px";
       }
       css.display = this.display || "block";
+      css.overflow = "hidden"; // to avoid margin collapsing
+      return css;
+    },
+    getCssInline : function(){
+      var css = this.css;
+      css["font-size"] = this.fontSize + "px";
+      if(this.color){
+	Args.copy(css, this.color.getCss());
+      }
+      if(this.fontWeight){
+	Args.copy(css, this.fontWeight.getCss());
+      }
+      // top level line need to follow parent blockflow.
+      if(this.parent && this.parent.isBlock()){
+	Args.copy(css, this.flow.getCss());
+      }
+      var start_offset = this.getStartOffset();
+      if(start_offset > 0){
+	this.edge = new Margin();
+	this.edge.setStart(this.flow, start_offset);
+
+	var cur_measure = this.getContentMeasure();
+	this.size.setMeasure(this.flow, cur_measure - start_offset);
+      }
+      Args.copy(css, this.size.getCss());
+
+      if(this.edge){
+	Args.copy(css, this.edge.getCss());
+      }
+      if(this.isTextVertical()){
+	if(Env.isIphoneFamily){
+	  css["letter-spacing"] = "-0.001em";
+	}
+	if(typeof this.markup === "undefined" || !this.isRubyLine()){
+	  css["margin-left"] = css["margin-right"] = "auto";
+	  css["text-align"] = "center";
+	}
+      } else if(this.lineRate <= 1.0){
+	css["line-height"] = "1em";
+      }
+      return css;
+    },
+    getCssVertInlineBox : function(){
+      var css = this.getCssBlock();
+      css["float"] = "none";
+      css["margin-left"] = css["margin-right"] = "auto";
       return css;
     },
     getCharCount : function(){
       return this.charCount;
     },
     getClasses : function(){
+      return this.isTextLine()? this._getClassesInline() : this._getClassesBlock();
+    },
+    _getClassesBlock : function(){
       var classes = ["nehan-box"];
       if(this._type != "box"){
 	classes.push(Css.addNehanPrefix(this._type));
+      }
+      return classes.concat(this.extraClasses || []);
+    },
+    _getClassesInline : function(){
+      var classes = ["nehan-text-line"];
+      classes.push("nehan-text-line-" + (this.isTextVertical()? "vert" : "hori"));
+      if(this.markup){
+	classes.push("nehan-" + this.markup.getName());
       }
       return classes.concat(this.extraClasses || []);
     },
@@ -4260,14 +4545,23 @@ var Box = (function(){
     getChildExtent : function(){
       return this.childExtent;
     },
+    getChildMeasure : function(){
+      return this.childMeasure;
+    },
     getFlowName : function(){
       return this.flow.getName();
     },
     getFlipFlow : function(){
       return this.flow.getFlipFlow();
     },
+    getTextMeasure : function(){
+      return this.childMeasure;
+    },
+    getTextRestMeasure : function(){
+      return this.getContentMeasure() - this.childMeasure;
+    },
     getRestContentExtent : function(){
-      return this.getContentExtent() - this.getChildExtent();
+      return this.getContentExtent() - this.childExtent;
     },
     getContentMeasure : function(flow){
       return this.size.getMeasure(flow || this.flow);
@@ -4328,6 +4622,15 @@ var Box = (function(){
     getBorder : function(){
       return this.edge? this.edge.border : null;
     },
+    getStartOffset : function(){
+      var indent = this.textIndent || 0;
+      switch(this.textAlign){
+      case "start": return indent;
+      case "end": return indent + this.getTextRestMeasure();
+      case "center": return indent + Math.floor(this.getTextRestMeasure() / 2);
+      default: return indent;
+      }
+    },
     getRestSize : function(){
       var rest_measure = this.getContentMeasure();
       var rest_extent = this.getRestContentExtent();
@@ -4371,16 +4674,24 @@ var Box = (function(){
       classes.push(klass);
       this.extraClasses = classes;
     },
-    addChild : function(child){
+    addChildBlock : function(child){
       this.childs.add(child);
       this.childExtent += child.getBoxExtent(this.flow);
       this.charCount += child.getCharCount();
+    },
+    addChildInline : function(child, measure){
+      this.childs.add(child);
+      this.childMeasure += measure;
     },
     addExtent : function(extent){
       this.size.addExtent(this.flow, extent);
     },
     addMeasure : function(measure){
       this.size.addMeasure(this.flow, measure);
+    },
+    setInlineElements : function(elements, measure){
+      this.childs.setNormal(elements);
+      this.childMeasure = measure;
     },
     setCss : function(prop, value){
       this.css[prop] = value;
@@ -4409,38 +4720,46 @@ var Box = (function(){
     setContentMeasure : function(flow, measure){
       this.size.setMeasure(flow, measure);
     },
-    setEdgeStart : function(prop, value){
-      if(this.edge){
-	this.edge.setEdgeStart(prop, this.flow, value);
-      }
-    },
-    setEdgeEnd : function(prop, value){
-      if(this.edge){
-	this.edge.setEdgeEnd(prop, this.flow, value);
-      }
-    },
-    setEdgeBefore : function(prop, value){
-      if(this.edge){
-	this.edge.setEdgeBefore(prop, this.flow, value);
-      }
-    },
-    setEdgeAfter : function(prop, value){
-      if(this.edge){
-	this.edge.setEdgeAfter(prop, this.flow, value);
-      }
-    },
     setEdge : function(edge){
-      if(edge instanceof BoxEdge){
+      var sizing = this.sizing? this.sizing : BoxSizings.getByName("margin-box");
+      if(sizing.isMarginBox()){
+	this._setEdgeByMarginBox(edge);
+      } else if(sizing.isBorderBox()){
+	this._setEdgeByBorderBox(edge);
+      } else if(sizing.isContentBox()){
 	this.edge = edge;
-      } else if(edge._type){
-	this.edge[edge._type] = edge;
       }
     },
-    setEdgeBySub : function(edge){
+    _setEdgeByMarginBox : function(edge){
       this.size.subEdge(edge);
       if(this.size.isValid()){
-	this.setEdge(edge);
+	this.edge = edge;
       }
+    },
+    _setEdgeByBorderBox : function(edge){
+      var edge2 = new BoxEdge();
+      edge2.border = edge.border;
+      edge2.padding = edge.padding;
+      this.size.subEdge(edge2);
+      if(this.size.isValid()){
+	this.edge = edge;
+      }
+    },
+    setMaxFontSize : function(max_font_size){
+      this.maxFontSize = max_font_size;
+      List.iter(this.getChilds(), function(element){
+	if(element instanceof Box && element._type === "text-line"){
+	  element.setMaxFontSize(max_font_size);
+	}
+      });
+    },
+    setMaxExtent : function(extent){
+      this.maxExtent = extent;
+      List.iter(this.getChilds(), function(element){
+	if(element instanceof Box && element._type === "text-line"){
+	  element.setMaxExtent(extent);
+	}
+      });
     },
     subMeasure : function(measure){
       this.size.subMeasure(this.flow, measure);
@@ -4457,17 +4776,47 @@ var Box = (function(){
     isEmptyChild : function(){
       return this.childs.getLength() === 0;
     },
+    isFirstChildOf : function(parent){
+      if(this._type === "li-marker" || this._type === "li-body" || this._type === "text-line"){
+	return false;
+      }
+      return parent && parent.isEmptyChild();
+    },
+    isTextBold : function(){
+      return (this.fontWeight && this.fontWeight.isBold());
+    },
+    isBlock : function(){
+      return !this.isTextLine();
+    },
+    isTextLine : function(){
+      return this._type === "text-line";
+    },
+    isTextLineRoot : function(){
+      return this.parent && this.parent.isBlock();
+    },
+    isInlineText : function(){
+      return this.isTextLine() && this.markup && this.markup.isInline();
+    },
+    isRubyLine : function(){
+      return this.isTextLine() && this.markup && (this.markup.getName() === "ruby");
+    },
+    isRtLine : function(){
+      return this.isTextLine() && this.markup && (this.markup.getName() === "rt");
+    },
+    isLinkLine : function(){
+      return this.isTextLine() && this.markup && (this.markup.getName() === "a");
+    },
+    isFirstLetter : function(){
+      return this.markup && this.markup.getName() === "first-letter";
+    },
     isTextVertical : function(){
       return this.flow.isTextVertical();
     },
+    isTextHorizontal : function(){
+      return this.flow.isTextHorizontal();
+    },
     isValidSize : function(){
       return this.size.isValid();
-    },
-    canJustify : function(){
-      if(this._type === "li-marker" || this._type === ":first-letter"){
-	return false;
-      }
-      return true;
     },
     canInclude : function(size){
       return this.size.canInclude(size);
@@ -4494,14 +4843,13 @@ var Box = (function(){
       return this;
     },
     shortenMeasure : function(flow){
-      var _flow = flow || this.flow;
-      var max_measure = this.getMaxChildMeasure(_flow);
-      this.setContentMeasure(_flow, max_measure);
+      flow = flow || this.flow;
+      this.size.setMeasure(flow, this.childMeasure);
       return this;
     },
     shortenExtent : function(flow){
-      var _flow = flow || this.flow;
-      this.setContentExtent(_flow, this.getChildExtent());
+      flow = flow || this.flow;
+      this.setContentExtent(flow, this.childExtent);
       return this;
     }
   };
@@ -4509,202 +4857,167 @@ var Box = (function(){
   return Box;
 })();
 
-var LineBox = (function(){
-  function LineBox(opt){
-    this._type = "line-box";
-    this.parent = opt.parent;
-    this.extent = opt.extent || 0;
-    this.rubyLine = opt.rubyLine || null;
-    this.textLine = opt.textLine || null;
-  }
-
-  LineBox.prototype = {
-    _getLinesRubyLineFirst : function(){
-      var ret = [];
-      if(this.rubyLine){
-	ret.push(this.rubyLine);
-      }
-      if(this.textLine){
-	ret.push(this.textLine);
-      }
-      return ret;
-    },
-    _getLinesTextLineFirst : function(){
-      var ret = [];
-      if(this.textLine){
-	ret.push(this.textLine);
-      }
-      if(this.rubyLine){
-	ret.push(this.rubyLine);
-      }
-      return ret;
-    },
-    getLines : function(){
-      var flow = this.parent.flow;
-      if(flow.isRubyLineFirst()){
-	return this._getLinesRubyLineFirst();
-      }
-      return this._getLinesTextLineFirst();
-    },
-    getCharCount : function(){
-      return this.textLine? this.textLine.getCharCount() : 0;
-    },
-    getTextLine : function(){
-      return this.textLine;
-    },
-    getRubyLine : function(){
-      return this.rubyLine;
-    },
-    getTextMeasure : function(){
-      return this.textLine.getTextMeasure();
-    },
-    getContentMeasure : function(){
-      return this.textLine.getContentMeasure();
-    },
-    getBoxExtent : function(){
-      return this.extent;
+// style setting from markup to box
+var BoxStyle = {
+  set : function(markup, box, parent){
+    this._setFontSize(markup, box, parent);
+    this._setFontColor(markup, box, parent);
+    this._setFontFamily(markup, box, parent);
+    this._setFontStyle(markup, box, parent);
+    this._setFontWeight(markup, box, parent);
+    this._setSizing(markup, box, parent);
+    this._setEdge(markup, box, parent);
+    this._setLineRate(markup, box, parent);
+    this._setTextAlign(markup, box, parent);
+    this._setTextIndent(markup, box, parent);
+    this._setTextEmphasis(markup, box, parent);
+    this._setFlowName(markup, box, parent);
+    this._setFloat(markup, box, parent);
+    this._setPageBreak(markup, box, parent);
+    this._setLetterSpacing(markup, box, parent);
+    this._setBackground(markup, box, parent);
+    this._setBackgroundColor(markup, box, parent);
+    this._setBackgroundImage(markup, box, parent);
+    this._setBackgroundPosition(markup, box, parent);
+    this._setBackgroundRepeat(markup, box, parent);
+    this._setClasses(markup, box, parent);
+  },
+  _setClasses : function(markup, box, parent){
+    List.iter(markup.classes, function(klass){
+      box.addClass(klass);
+    });
+  },
+  _setFontSize : function(markup, box, parent){
+    var base_font_size = parent? parent.fontSize : Layout.fontSize;
+    var font_size = markup.getCssAttr("font-size", "inherit");
+    if(font_size != "inherit"){
+      box.fontSize = UnitSize.getUnitSize(font_size, base_font_size);
     }
-  };
-
-  return LineBox;
-})();
-
-// this class is almost same as 'Box',
-// but we isolate this class for performance reason.
-var TextLine = (function(){
-  function TextLine(opt){
-    this.css = {};
-    this._type = opt.type || "text-line";
-    this.size = opt.size;
-    this.fontSize = opt.fontSize;
-    this.color = opt.color;
-    this.parent = opt.parent;
-    this.textMeasure = opt.textMeasure;
-    this.textIndent = opt.textIndent;
-    this.tokens = opt.tokens;
-    this.emphaChars = opt.emphaChars || null;
-    this.lineRate = opt.lineRate || 1.0;
-    this.bodyLine = opt.bodyLine || null;
-    this.charCount = opt.charCount || 0;
-    this.letterSpacing = opt.letterSpacing || 0;
-
-    // inherit parent properties
-    this.textAlign = this.parent.textAlign;
-    this.flow = this.parent.flow;
-  }
-
-  TextLine.prototype = {
-    // this function is called only from VerticalInlineEvaluator::evalRubyLabelLine,
-    // and ruby is not justify target.
-    canJustify : function(){
-      return false;
-    },
-    isTextVertical : function(){
-      return this.flow.isTextVertical();
-    },
-    isTextLine : function(){
-      return this._type === "text-line";
-    },
-    isRubyLine : function(){
-      return this._type === "ruby-line";
-    },
-    setEdge : function(edge){
-      this.edge = edge;
-    },
-    getCharCount : function(){
-      return this.charCount;
-    },
-    getTextMeasure : function(){
-      return this.textMeasure;
-    },
-    getTextRestMeasure : function(){
-      return this.getContentMeasure() - this.textMeasure;
-    },
-    getContentMeasure : function(flow){
-      return this.size.getMeasure(flow || this.flow);
-    },
-    getContentExtent : function(flow){
-      return this.size.getExtent(flow || this.flow);
-    },
-    getRestContentExtent : function(flow){
-      return this.getContentExtent(flow || this.flow);
-    },
-    getBodyLineContentExtent : function(){
-      return this.bodyLine.getContentExtent();
-    },
-    getBoxExtent : function(flow){
-      var _flow = flow || this.flow;
-      var ret = this.size.getExtent(_flow);
-      if(this.edge){
-	ret += this.edge.getExtentSize(_flow);
-      }
-      return ret;
-    },
-    getTextSide : function(){
-      return this.flow.getTextSide();
-    },
-    getPropStart : function(){
-      return this.flow.getPropStart();
-    },
-    getPropAfter : function(){
-      return this.flow.getPropAfter();
-    },
-    getPropBefore : function(){
-      return this.flow.getPropBefore();
-    },
-    getStartOffset : function(){
-      switch(this.textAlign){
-      case "start": return this.textIndent;
-      case "end": return this.textIndent + this.getTextRestMeasure();
-      case "center": return this.textIndent + Math.floor(this.getTextRestMeasure() / 2);
-      default: return this.textIndent;
-      }
-    },
-    getCss : function(){
-      var css = this.css;
-      Args.copy(css, this.size.getCss());
-      if(this.parent){
-	Args.copy(css, this.flow.getCss());
-      }
-      var start_offset = this.getStartOffset();
-      if(start_offset){
-	this.edge = new Margin();
-	this.edge.setStart(this.flow, start_offset);
-      }
-      if(this.edge){
-	Args.copy(css, this.edge.getCss());
-      }
-      if(this.isTextVertical()){
-	if(Env.isIphoneFamily){
-	  css["letter-spacing"] = "-0.001em";
-	}
-      }
-      if(this._type === "ruby-line"){
-	if(this.flow.isTextHorizontal()){
-	  css["line-height"] = this.getContentExtent() + "px";
-	}
-      }
-      return css;
-    },
-    getCssClasses : function(){
-      return this.getClasses().join(" ");
-    },
-    getClasses : function(){
-      return [
-	["nehan", this._type].join("-"),
-	["nehan", this._type, (this.isTextVertical()? "vert" : "hori")].join("-")
-      ];
-    },
-    getTextHorizontalDir : function(){
-      return this.flow.getTextHorizontalDir();
-    },
-    shortenMeasure : function(){
-      this.size.setMeasure(this.flow, this.textMeasure);
+  },
+  _setFontColor : function(markup, box, parent){
+    var font_color = markup.getCssAttr("color");
+    if(font_color){
+      box.color = new Color(font_color);
     }
-  };
+  },
+  _setFontFamily : function(markup, box, parent){
+    var font_family = markup.getCssAttr("font-family");
+    if(font_family){
+      box.setCss("font-family", font_family);
+    }
+  },
+  _setFontStyle : function(markup, box, parent){
+    var font_style = markup.getCssAttr("font-style");
+    if(font_style){
+      box.setCss("font-style", font_style);
+    }
+  },
+  _setFontWeight : function(markup, box, parent){
+    var font_weight = markup.getCssAttr("font-weight");
+    if(font_weight){
+      box.fontWeight = new FontWeight(font_weight);
+    }
+  },
+  _setSizing : function(markup, box, parent){
+    var box_sizing = markup.getCssAttr("box-sizing");
+    if(box_sizing){
+      box.sizing = BoxSizings.getByName(box_sizing);
+    }
+  },
+  _setEdge : function(markup, box, parent){
+    var edge = markup.getBoxEdge(box.flow, box.fontSize, box.getContentMeasure());
+    if(edge){
+      box.setEdge(edge);
+    }
+  },
+  _setLineRate : function(markup, box, parent){
+    var line_rate = markup.getCssAttr("line-rate", "inherit");
+    if(line_rate !== "inherit"){
+      box.lineRate = line_rate;
+    }
+  },
+  _setTextAlign : function(markup, box, parent){
+    var text_align = markup.getCssAttr("text-align");
+    if(text_align){
+      box.textAlign = text_align;
+    }
+  },
+  _setTextIndent : function(markup, box, parent){
+    var text_indent = markup.getCssAttr("text-indent", "inherit");
+    if(text_indent !== "inherit"){
+      box.textIndent = UnixSize.getUnitSize(text_indent, box.fontSize);
+    }
+  },
+  _setTextEmphasis : function(markup, box, parent){
+    var empha_style = markup.getCssAttr("text-emphasis-style");
+    if(empha_style){
+      var empha_pos = markup.getCssAttr("text-emphasis-position", "over");
+      var empha_color = markup.getCssAttr("text-emphasis-color", "black");
+      var text_empha = new TextEmpha();
+      text_empha.setStyle(empha_style);
+      text_empha.setPos(empha_pos);
+      text_empha.setColor(empha_color);
+      box.textEmpha = text_empha;
+    }
+  },
+  _setFlowName : function(markup, box, parent){
+    var flow_name = markup.getCssAttr("flow", "inherit");
+    if(flow_name === "flip"){
+      box.setFlow(parent.getFlipFlow());
+    } else if(flow_name !== "inherit"){
+      box.setFlow(BoxFlows.getByName(flow_name));
+    }
+  },
+  _setFloat : function(markup, box, parent){
+    var logical_float = markup.getCssAttr("float", "none");
+    if(logical_float != "none"){
+      box.logicalFloat = logical_float;
+    }
+  },
+  _setPageBreak : function(markup, box, parent){
+    var page_break_after = markup.getCssAttr("page-break-after", false);
+    if(page_break_after){
+      box.pageBreakAfter = true;
+    }
+  },
+  _setLetterSpacing : function(markup, box, parent){
+    var letter_spacing = markup.getCssAttr("letter-spacing");
+    if(letter_spacing){
+      box.letterSpacing = UnitSize.getUnitSize(letter_spacing, box.fontSize);
+    }
+  },
+  _setBackground : function(markup, box, parent){
+    var background = markup.getCssAttr("background");
+    if(background){
+      box.setCss("background", background);
+    }
+  },
+  _setBackgroundColor : function(markup, box, parent){
+    var background_color = markup.getCssAttr("background-color");
+    if(background_color){
+      box.setCss("background-color", background_color);
+    }
+  },
+  _setBackgroundImage : function(markup, box, parent){
+    var background_image = markup.getCssAttr("background-image");
+    if(background_image){
+      box.setCss("background-image", background_image);
+    }
+  },
+  _setBackgroundPosition : function(markup, box, parent){
+    var background_pos = markup.getCssAttr("background-position");
+    if(background_pos){
+      box.setCss("background-position", background_pos);
+    }
+  },
+  _setBackgroundRepeat : function(markup, box, parent){
+    var background_repeat = markup.getCssAttr("background-repeat");
+    if(background_repeat){
+      box.setCss("background-repeat", background_pos);
+    }
+  }
+};
 
-  return TextLine;
-})();
 
 var Lexer = (function (){
 
@@ -4818,7 +5131,7 @@ var Lexer = (function (){
     },
     _parseChildContentTag : function(tag){
       var content = this._getTagContent(tag.name);
-      tag.setContent(Utils.trimCRLF(content));
+      tag.setContentRaw(Utils.trimCRLF(content));
       this._stepBuff(content.length + tag.name.length + 3); // 3 = "</>".length
       return tag;
     },
@@ -5388,15 +5701,10 @@ var BlockContext = (function(){
   }
 
   BlockContext.prototype = {
-    pushBlock : function(tag){
-      var parent_tag = this.getHeadTag();
-      if(parent_tag){
-	// copy 'inherit' value from parent in 'markup' level.
-	tag.inherit(parent_tag);
-      }
+    pushTag : function(tag){
       this.tagStack.push(tag);
     },
-    popBlock : function(){
+    popTag : function(){
       return this.tagStack.pop();
     },
     getHeadTag : function(){
@@ -5405,10 +5713,10 @@ var BlockContext = (function(){
     getTagStack : function(){
       return this.tagStack;
     },
-    getDepth : function(){
+    getTagDepth : function(){
       return this.tagStack.getDepth();
     },
-    getDepthByName : function(name){
+    getTagDepthByName : function(name){
       return this.tagStack.getDepthByName(name);
     },
     findTag : function(fn){
@@ -5420,13 +5728,13 @@ var BlockContext = (function(){
     isTagEnable : function(fn){
       return this.tagStack.exists(fn);
     },
+    isTagNameEnable : function(tag_name){
+      return this.tagStack.isTagNameEnable(tag_name);
+    },
     isHeaderEnable : function(){
       return this.tagStack.exists(function(tag){
 	return tag.isHeaderTag();
       });
-    },
-    isTagNameEnable : function(tag_name){
-      return this.tagStack.isTagNameEnable(tag_name);
     }
   };
 
@@ -5436,99 +5744,35 @@ var BlockContext = (function(){
 var InlineContext = (function(){
   function InlineContext(){
     this.tagStack = new TagStack();
-    this.fontSizeStack = [];
-    this.fontColorStack = [];
-    this.linePos = 0;
   }
 
   InlineContext.prototype = {
-    // this func is used when we want temporary context and temporary font size.
-    // mainly used from ruby label generator.
-    setFixedFontSize : function(font_size){
-      this.fixedFontSize = font_size;
+    pushTag : function(tag){
+      this.tagStack.push(tag);
+    },
+    popTag : function(){
+      return this.tagStack.pop();
+    },
+    getHeadTag : function(){
+      return this.tagStack.getHead();
     },
     getTagStack : function(){
       return this.tagStack;
     },
-    getFontSize : function(parent){
-      if(this.fixedFontSize){
-	return this.fixedFontSize;
-      }
-      if(this.fontSizeStack.length > 0){
-	return this.fontSizeStack[this.fontSizeStack.length - 1];
-      }
-      return parent.fontSize;
-    },
-    getFontColor : function(parent){
-      if(this.fontColorStack.length > 0){
-	return this.fontColorStack[this.fontColorStack.length - 1];
-      }
-      return parent.color;
-    },
     getTagDepth : function(){
       return this.tagStack.getDepth();
+    },
+    findTag : function(fn){
+      return this.tagStack.find(fn);
+    },
+    isEmpty : function(){
+      return this.tagStack.isEmpty();
     },
     isTagEnable : function(fn){
       return this.tagStack.exists(fn);
     },
     isTagNameEnable : function(tag_name){
       return this.tagStack.isTagNameEnable(tag_name);
-    },
-    isBoldEnable : function(){
-      return this.tagStack.exists(function(tag){
-	return tag.isBoldTag();
-      });
-    },
-    isEmpty : function(){
-      return this.tagStack.isEmpty();
-    },
-    findTag : function(fn){
-      return this.tagStack.find(fn);
-    },
-    findLastTagByName : function(name){
-      return this.tagStack.revfind(function(tag){
-	return tag.getName() == name;
-      });
-    },
-    pushTag : function(tag, parent){
-      var font_size = tag.getCssAttr("font-size");
-      if(font_size){
-	var cur_font_size = this.getFontSize(parent);
-	var new_font_size = UnitSize.getUnitSize(font_size, cur_font_size);
-	tag.setFontSizeUpdate(new_font_size);
-	this.fontSizeStack.push(new_font_size);
-      }
-      var font_color = tag.getCssAttr("color", "inherit");
-      if(font_color !== "inherit"){
-	font_color = new Color(font_color);
-
-	// store inline color update info in markup object.
-	tag.setFontColorUpdate(font_color);
-	this.fontColorStack.push(font_color);
-      }
-      this.tagStack.push(tag);
-    },
-    popTag : function(){
-      var tag = this.tagStack.pop();
-      if(tag){
-	this._updateStatus(tag);
-      }
-      return tag;
-    },
-    popTagByName : function(name){
-      var tag = this.tagStack.popByName(name);
-      if(tag){
-	this._updateStatus(tag);
-      }
-      return tag;
-    },
-    _updateStatus : function(tag){
-      if(tag.fontSize && this.fontSizeStack.length > 0){
-	this.fontSizeStack.pop();
-      }
-      if(tag.color && this.fontColorStack.length > 0){
-	this.fontColorStack.pop();
-      }
     }
   };
 
@@ -5616,6 +5860,12 @@ var DocumentContext = (function(){
 	styleContext:this.styleContext
       });
     },
+    inheritTag : function(tag){
+      var parent_tag = this.getCurBlockTag();
+      if(parent_tag){
+	tag.inherit(parent_tag);
+      }
+    },
     isEmptyMarkupContext : function(){
       return this.inlineContext.isEmpty();
     },
@@ -5651,11 +5901,8 @@ var DocumentContext = (function(){
       return this.anchors[anchor_name];
     },
     // inline context
-    getInlineFontSize : function(parent){
-      return this.inlineContext.getFontSize(parent);
-    },
-    getInlineFontColor : function(parent){
-      return this.inlineContext.getFontColor(parent);
+    getCurInlineTag : function(){
+      return this.inlineContext.getHeadTag();
     },
     getInlineTagStack : function(){
       return this.inlineContext.getTagStack();
@@ -5663,17 +5910,11 @@ var DocumentContext = (function(){
     getInlineTagDepth : function(){
       return this.inlineContext.getTagDepth();
     },
-    pushInlineTag : function(tag, parent){
-      this.inlineContext.pushTag(tag, parent);
+    pushInlineTag : function(tag){
+      this.inlineContext.pushTag(tag);
     },
     popInlineTag : function(){
       return this.inlineContext.popTag();
-    },
-    popInlineTagByName : function(name){
-      return this.inlineContext.popTagByName(name);
-    },
-    findLastInlineTagByName : function(name){
-      return this.inlineContext.findLastTagByName(name);
     },
     findInlineTag : function(fn){
       return this.inlineContext.findTag(fn);
@@ -5681,24 +5922,15 @@ var DocumentContext = (function(){
     isInlineTagEnable : function(fn){
       return this.inlineContext.isTagEnable(fn);
     },
-    isBoldEnable : function(){
-      if(this.inlineContext.isBoldEnable()){
-	return true;
-      }
-      return  this.isHeaderEnable();
-    },
-    setFixedFontSize : function(font_size){
-      this.inlineContext.setFixedFontSize(font_size);
-    },
     // block context
     isHeaderEnable : function(){
       return this.blockContext.isHeaderEnable();
     },
-    pushBlock : function(tag){
-      this.blockContext.pushBlock(tag);
+    pushBlockTag : function(tag){
+      this.blockContext.pushTag(tag);
     },
-    popBlock : function(){
-      return this.blockContext.popBlock();
+    popBlockTag : function(){
+      return this.blockContext.popTag();
     },
     getBlockTagStack : function(){
       return this.blockContext.getTagStack();
@@ -5707,10 +5939,10 @@ var DocumentContext = (function(){
       return this.blockContext.getHeadTag();
     },
     getBlockDepth : function(){
-      return this.blockContext.getDepth();
+      return this.blockContext.getTagDepth();
     },
     getBlockDepthByName : function(name){
-      return this.blockContext.getDepthByName(name);
+      return this.blockContext.getTagDepthByName(name);
     },
     getOutlineTitle : function(){
       return this.blockContext.getOutlineTitle();
@@ -5744,7 +5976,7 @@ var DocumentContext = (function(){
     logSectionHeader : function(tag){
       var type = tag.getName();
       var rank = tag.getHeaderRank();
-      var title = tag.content;
+      var title = tag.getContentRaw();
       var page_no = this.pageNo;
       var header_id = __global_header_id++;
       this.outlineContext.logSectionHeader(type, rank, title, page_no, header_id);
@@ -5983,6 +6215,9 @@ var TokenStream = Class.extend({
       }
     }
   },
+  rewind : function(){
+    this.pos = 0;
+  },
   peek : function(off){
     var offset = off || 0;
     var index = Math.max(0, this.pos + offset);
@@ -6169,7 +6404,7 @@ var HeadTagStream = FilteredTagStream.extend({
 var TableTagStream = FilteredTagStream.extend({
   init : function(markup){
     // TODO: caption not supported yet.
-    this._super(markup.content, function(tag){
+    this._super(markup.getContent(), function(tag){
       return (tag.isSameAs("thead") ||
 	      tag.isSameAs("tbody") ||
 	      tag.isSameAs("tfoot") ||
@@ -6213,21 +6448,21 @@ var TableTagStream = FilteredTagStream.extend({
 	switch(token.name){
 	case "tr":
 	  token.row = ctx.row;
-	  self._setChildTokens(token, self._parseCols(ctx, token.content));
+	  self._setChildTokens(token, self._parseCols(ctx, token.getContent()));
 	  ctx.row++;
 	  tbodies.push(token);
 	  break;
 	case "thead":
 	  thead = token;
-	  theads = theads.concat(self._parseRows(ctx, token.content));
+	  theads = theads.concat(self._parseRows(ctx, token.getContent()));
 	  break;
 	case "tbody":
 	  tbody = token;
-	  tbodies = tbodies.concat(self._parseRows(ctx, token.content));
+	  tbodies = tbodies.concat(self._parseRows(ctx, token.getContent()));
 	  break;
 	case "tfoot":
 	  tfoot = token;
-	  tfoots = tfoots.concat(self._parseRows(ctx, token.content));
+	  tfoots = tfoots.concat(self._parseRows(ctx, token.getContent()));
 	  break;
 	}
       }
@@ -6287,7 +6522,7 @@ var TableTagStream = FilteredTagStream.extend({
 
     return List.map(rows, function(row){
       row.row = ctx.row;
-      row = self._setChildTokens(row, self._parseCols(ctx, row.content));
+      row = self._setChildTokens(row, self._parseCols(ctx, row.getContent()));
       ctx.row++;
       return row;
     });
@@ -6319,6 +6554,7 @@ var ListTagStream = FilteredTagStream.extend({
   }
 });
 
+
 var DefListTagStream = FilteredTagStream.extend({
   init : function(src, font_size, max_size){
     this._super(src, function(tag){
@@ -6328,65 +6564,40 @@ var DefListTagStream = FilteredTagStream.extend({
 });
 
 
-var RubyStream = (function(){
-  function RubyStream(content){
-    this.rubies = this._parseAll(new TokenStream(content));
-    this.pos = 0;
-  }
-
-  RubyStream.prototype = {
-    backup : function(){
-      this.backupPos = this.pos;
-    },
-    rollback : function(){
-      if(typeof this.backupPos != "undefined"){
-	this.pos = this.backupPos;
-      }
-    },
-    hasNext : function(){
-      return this.pos < this.rubies.length;
-    },
-    peek : function(){
-      if(!this.hasNext()){
-	return null;
-      }
-      return this.rubies[this.pos];
-    },
-    get : function(){
-      var ruby = this.peek();
-      ruby.index = this.pos;
-      this.pos++;
-      return ruby;
-    },
-    _parseAll : function(stream){
-      var ret = [];
-      while(stream.hasNext()){
-	ret.push(this._parseRuby(stream));
-      }
-      return ret;
-    },
-    _parseRuby : function(stream){
-      var rbs = [];
-      var rt = null;
-      while(true){
-	var token = stream.get();
-	if(token === null){
-	  break;
-	}
-	if(Token.isTag(token) && token.getName() === "rt"){
-	  rt = token;
-	  break;
-	}
-	if(Token.isText(token)){
-	  rbs.push(token);
-	}
-      }
-      return new Ruby(rbs, rt);
+var RubyTagStream = TokenStream.extend({
+  init : function(src){
+    this._super(src);
+    this.getAll();
+    this.tokens = this._parse();
+    this.rewind();
+  },
+  _parse : function(stream){
+    var ret = [];
+    while(this.hasNext()){
+      ret.push(this._parseRuby());
     }
-  };
+    return ret;
+  },
+  _parseRuby : function(stream){
+    var rbs = [];
+    var rt = null;
+    while(true){
+      var token = this.get();
+      if(token === null){
+	break;
+      }
+      if(Token.isTag(token) && token.getName() === "rt"){
+	rt = token;
+	break;
+      }
+      if(Token.isText(token)){
+	rbs.push(token);
+      }
+    }
+    return new Ruby(rbs, rt);
+  }
+});
 
-  return RubyStream;
-})();
 
 var DocumentGenerator = (function(){
   function DocumentGenerator(src){
@@ -6468,7 +6679,7 @@ var HtmlGenerator = (function(){
       return this.generator.getOutlineHtml(root_name);
     },
     _createStream : function(){
-      return new HtmlTagStream(this.markup.content);
+      return new HtmlTagStream(this.markup.getContentRaw());
     },
     _getGenerator : function(){
       var generator = null;
@@ -6479,10 +6690,10 @@ var HtmlGenerator = (function(){
 	}
 	switch(tag.getName()){
 	case "head":
-	  this._parseHead(tag.content);
+	  this._parseHead(tag.getContentRaw());
 	  break;
 	case "body":
-	  generator = new BodyPageGenerator(tag, this.context);
+	  generator = new BodyBlockTreeGenerator(tag, this.context);
 	  break;
 	}
       }
@@ -6515,7 +6726,7 @@ var HtmlGenerator = (function(){
       }
     },
     _parseTitle : function(tag){
-      this.context.setTitle(tag.content);
+      this.context.setTitle(tag.getContentRaw());
     },
     _parseMeta : function(tag){
       var context = this.context;
@@ -6535,7 +6746,7 @@ var HtmlGenerator = (function(){
 })();
 
 
-var BlockGenerator = Class.extend({
+var ElementGenerator = Class.extend({
   init : function(markup, context){
     this.markup = markup;
     this.context = context;
@@ -6547,135 +6758,57 @@ var BlockGenerator = Class.extend({
   },
   rollback : function(){
   },
-  yield : function(parent){
-    throw "BlockGenerator::yield not impletented";
-  },
-  getCurGenerator : function(){
-    if(this.generator && this.generator.hasNext()){
-      return this.generator;
-    }
-    return null;
-  },
   // called when box is created, but no style is not loaded.
   _onReadyBox : function(box, parent){
   },
   // called when box is created, and std style is already loaded.
   _onCreateBox : function(box, parent){
   },
+  _getMarkupStaticSize : function(parent){
+    var font_size = parent? parent.fontSize : Layout.fontSize;
+    var measure = parent? parent.getContentMeasure(parent.flow) : Layout.getStdMeasure();
+    return this.markup.getStaticSize(font_size, measure);
+  },
+  _yieldStaticElement : function(parent, tag){
+    switch(tag.getName()){
+    case "img":
+      return (new ImageGenerator(tag, this.context)).yield(parent);
+    case "ibox":
+      return (new InlineBoxGenerator(tag, this.context)).yield(parent);
+    case "div":
+      if(tag.hasFlow()){
+	return (new InlinePageGenerator(tag, this.context.createInlineRoot())).yield(parent);
+      }
+      return (new InlineBoxGenerator(tag, this.context)).yield(parent);
+    default:
+      return (new InlinePageGenerator(tag, this.context.createInlineRoot())).yield(parent);
+    }
+  },
   _getBoxType : function(){
     return this.markup.getName();
   },
-  _setEdge : function(box, edge){
-    // this makes difference to basic css box model.
-    // as paged media has fixed size boundary,
-    // we reduce 'inside' of box to embody margin/padding/border,
-    // while basic box model add them to 'outside' of box.
-    box.setEdgeBySub(edge);
-  },
-  _isFirstChild : function(box, parent){
-    // li-marker and li-body are always first childs of 'li', so ignore them.
-    if(box._type == "li-marker" || box._type == "li-body"){
-      return false;
-    }
-    return parent.isEmptyChild();
-  },
-  _setBoxStyle : function(box, parent){
+  _setBoxFirstChild : function(box, parent){
     // if box is first child of parent,
     // copy style of <this.markup.name>:first-child.
-    if(parent && this._isFirstChild(box, parent)){
-      var pseudo_css_attr = this.markup.getPseudoCssAttr("first-child");
-      this.markup.setCssAttrs(pseudo_css_attr);
+    if(box.isFirstChildOf(parent)){
+      this.markup.setFirstChild();
     }
-    // set font size
-    var base_font_size = parent? parent.fontSize : Layout.fontSize;
-    var font_size = this.markup.getCssAttr("font-size", "inherit");
-    if(font_size != "inherit"){
-      box.fontSize = UnitSize.getUnitSize(font_size, base_font_size);
-    }
-
-    // set font color
-    var font_color = this.markup.getCssAttr("color", "inherit");
-    if(font_color != "inherit"){
-      box.color = new Color(font_color);
-    }
-
-    // set box edge
-    var edge = this.markup.getBoxEdge(box.flow, box.fontSize, box.getContentMeasure());
-    if(edge){
-      this._setEdge(box, edge);
-    }
-
-    // set other variables
-    var line_rate = this.markup.getCssAttr("line-rate");
-    if(line_rate){
-      box.lineRate = line_rate;
-    }
-    var text_align = this.markup.getCssAttr("text-align");
-    if(text_align){
-      box.textAlign = text_align;
-    }
-    var flow_name = this.markup.getCssAttr("flow");
-    if(flow_name){
-      switch(flow_name){
-      case "flip":
-	box.setFlow(parent.getFlipFlow());
-	break;
-      case "inherit":
-	box.setFlow(parent.flow);
-	break;
-      default:
-	box.setFlow(BoxFlows.getByName(flow_name));
-	break;
-      }
-    }
-    var logical_float = this.markup.getCssAttr("float", "none");
-    if(logical_float != "none"){
-      box.logicalFloat = logical_float;
-    }
-    var text_indent = this.markup.getCssAttr("text-indent", 0);
-    if(text_indent){
-      box.textIndent = box.fontSize;
-    }
-    var page_break_after = this.markup.getCssAttr("page-break-after", false);
-    if(page_break_after){
-      box.pageBreakAfter = true;
-    }
-    var letter_spacing = this.markup.getCssAttr("letter-spacing");
-    if(letter_spacing){
-      box.letterSpacing = UnitSize.getUnitSize(letter_spacing, base_font_size);
-    }
-
-    // read other optional styles not affect layouting issue.
-    var markup = this.markup;
-    List.iter([
-      "background",
-      "background-color",
-      "background-image",
-      "background-repeat",
-      "background-position",
-      "cursor",
-      "font",
-      "font-family",
-      "font-style",
-      "font-weight",
-      "opacity",
-      "z-index"
-    ], function(prop){
-      var value = markup.getCssAttr(prop);
-      if(value){
-	box.setCss(prop, value);
-      }
-    });
-
-    // copy classes from markup to box object.
+  },
+  _setBoxClasses : function(box, parent){
     List.iter(this.markup.classes, function(klass){
       box.addClass(klass);
     });
   },
+  _setBoxStyle : function(box, parent){
+    BoxStyle.set(this.markup, box, parent);
+  },
   _createBox : function(size, parent){
     var box_type = this._getBoxType();
     var box = Layout.createBox(size, parent, box_type);
+    box.markup = this.markup;
     this._onReadyBox(box, parent);
+    this._setBoxFirstChild(box, parent);
+    this._setBoxClasses(box, parent);
     this._setBoxStyle(box, parent);
     this._onCreateBox(box, parent);
     return box;
@@ -6683,8 +6816,17 @@ var BlockGenerator = Class.extend({
 });
 
 
-var StaticBlockGenerator = BlockGenerator.extend({
-  yield : function(parent, size){
+var StaticBlockGenerator = ElementGenerator.extend({
+  _getBoxSize : function(parent){
+    return this._getMarkupStaticSize(parent);
+  },
+  _createBox : function(size, parent){
+    var box = this._super(size, parent);
+    box.sizing = BoxSizings.getByName("content-box"); // use normal box model
+    return box;
+  },
+  yield : function(parent){
+    var size = this._getBoxSize(parent);
     var box = this._createBox(size, parent);
     if(this.markup.isPush()){
       box.backward = true;
@@ -6717,10 +6859,6 @@ var StaticBlockGenerator = BlockGenerator.extend({
       return box;
     }
     return Exceptions.RETRY;
-  },
-  _setEdge : function(box, edge){
-    box.setEdge(edge); // set edge as normal box model.
-    return box;
   }
 });
 
@@ -6729,11 +6867,8 @@ var InlineBoxGenerator = StaticBlockGenerator.extend({
   _getBoxType : function(){
     return "ibox";
   },
-  _getBoxContent : function(){
-    return this.markup.isChildContentTag()? this.markup.getWrapSrc() : this.markup.getSrc();
-  },
   _onCreateBox : function(box, parent){
-    box.content = this._getBoxContent();
+    box.content = this.markup.getContentRaw();
     box.css.overflow = "hidden";
   }
 });
@@ -6744,72 +6879,36 @@ var ImageGenerator = StaticBlockGenerator.extend({
   }
 });
 
-var HorizontalRuleGenerator = StaticBlockGenerator.extend({
+var HorizontalRuleGenerator = ElementGenerator.extend({
+  _getBoxSize : function(parent){
+    var measure = parent? parent.getContentMeasure() : Layout.getStdMeasure();
+    return parent.flow.getBoxSize(measure, 1);
+  },
   yield : function(parent){
-    var measure = parent.getContentMeasure();
-    var size = parent.flow.getBoxSize(measure, 1);
-    return this._super(parent, size);
+    var size = this._getBoxSize(parent);
+    var box = this._createBox(size, parent);
+    return box;
   }
 });
 
-var RubyGenerator = (function(){
-  function RubyGenerator(markup){
-    this.markup = markup;
-    this.stream = new RubyStream(markup.content);
-  }
-
-  RubyGenerator.prototype = {
-    backup : function(){
-      this.stream.backup();
-    },
-    rollback : function(){
-      this.stream.rollback();
-    },
-    hasNext : function(){
-      return this.stream.hasNext();
-    },
-    // ctx : LineContext
-    yield : function(ctx){
-      this.backup();
-      var ruby = this.stream.get();
-      if(ruby === null){
-	return null;
-      }
-      ruby.setStartPos(ctx.curMeasure);
-
-      // avoid overwriting metrics.
-      if(!ruby.hasMetrics()){
-	ruby.setMetrics(ctx.getParentFlow(), this.markup.fontSize, this.markup.letterSpacing);
-      }
-      return ruby;
-    }
-  };
-
-  return RubyGenerator;
-})();
-
-var LineContext = (function(){
-  function LineContext(parent, stream, context){
-    this.parent = parent;
+var InlineTreeContext = (function(){
+  function InlineTreeContext(line, stream, context){
+    this.line = line;
     this.stream = stream;
     this.context = context;
-    this.isRubyLine = parent._type === "ruby-line";
+    this.markup = this.context.getCurInlineTag() || null;
     this.lineStartPos = this.stream.getPos();
-    this.lineRate = parent.lineRate;
-    this.letterSpacing = parent.letterSpacing || 0;
-    this.textIndent = stream.isHead()? (parent.textIndent || 0) : 0;
-    this.maxFontSize = parent.fontSize;
+    this.textIndent = stream.isHead()? (line.textIndent || 0) : 0;
+    this.maxFontSize = 0;
     this.maxExtent = 0;
-    this.maxMeasure = parent.getContentMeasure() - this.textIndent;
+    this.maxMeasure = line.getContentMeasure() - this.textIndent;
     this.curMeasure = 0;
     this.restMeasure = this.maxMeasure;
-    this.restExtent = parent.getRestContentExtent();
-    this.lineMeasure = parent.getContentMeasure() - this.textIndent;
-    this.rubyLineRate = Math.max(0, this.lineRate - 1);
-    this.rubyLineExtent = this.isRubyLine? 0 : Math.floor(parent.fontSize * this.rubyLineRate);
-    this.bodyTokens = [];
-    this.rubyTokens = [];
-    this.emphaChars = [];
+    this.restExtent = line.getRestContentExtent();
+    this.lineMeasure = line.getContentMeasure() - this.textIndent;
+    this.startTokens = [];
+    this.lineTokens = [];
+    this.endTokens = [];
     this.lineBreak = false;
     this.charCount = 0;
     this.lastToken = null;
@@ -6817,74 +6916,87 @@ var LineContext = (function(){
     this.lastText = null;
   }
 
-  LineContext.prototype = {
-    canContainBasicLine : function(){
-      return this.restExtent >= Math.floor(this.parent.fontSize * this.lineRate);
-    },
-    canContainExtent : function(extent){
-      return this.restExtent >= extent;
-    },
-    canContainAdvance : function(element, advance){
-      if(element instanceof Box || !this.parent.canJustify()){
-	return this.restMeasure >= advance;
+  InlineTreeContext.prototype = {
+    getElementExtent : function(element){
+      if(Token.isText(element)){
+	if((Token.isChar(element) || Token.isTcy(element)) && this.line.textEmpha){
+	  return this.line.textEmpha.getExtent(this.line.fontSize);
+	}
+	return this.line.fontSize;
       }
-      if(element instanceof Word || element instanceof Tcy){
+      if(element instanceof Ruby){
+	return element.getExtent(this.line.fontSize);
+      }
+      return element.getBoxExtent(this.getLineFlow());
+    },
+    getElementFontSize : function(element){
+      return (element instanceof Box)? element.fontSize : this.line.fontSize;
+    },
+    getElementAdvance : function(element){
+      if(Token.isText(element)){
+	return element.getAdvance(this.getLineFlow(), this.getLetterSpacing());
+      }
+      if(element instanceof Ruby){
+	return element.getAdvance(this.getLineFlow());
+      }
+      return element.getBoxMeasure(this.getLineFlow());
+    },
+    getFontSize : function(){
+      return this.line.fontSize;
+    },
+    getMaxFontSize : function(){
+      return this.maxFontSize;
+    },
+    getMaxExtent : function(){
+      return this.maxExtent;
+    },
+    getLineFlow : function(){
+      return this.line.flow;
+    },
+    getLetterSpacing : function(){
+      return this.line.letterSpacing || 0;
+    },
+    canContainBasicLine : function(){
+      return this.restExtent >= Math.floor(this.line.fontSize * this.line.lineRate);
+    },
+    canContain : function(element, advance){
+      if(element instanceof Box ||
+	 element instanceof Word ||
+	 element instanceof Tcy ||
+	 element instanceof Ruby ||
+	 this.line.isFirstLetter() ||
+	 this.line.isRtLine()){
 	return this.restMeasure >= advance;
       }
       // justify target need space for tail fix.
-      return this.restMeasure - this.parent.fontSize >= advance;
-    },
-    canContain : function(element, advance, extent){
-      return this.canContainAdvance(element, advance) && this.canContainExtent(extent);
+      return this.restMeasure - this.line.fontSize >= advance;
     },
     isPreLine : function(){
-      return this.parent._type === "pre";
+      return this.line._type === "pre";
     },
     isEmptySpace : function(){
       return this.restMeasure <= 0;
     },
-    isBoldEnable : function(){
-      return this.context.isBoldEnable();
+    isTextBold : function(){
+      return this.line.isTextBold();
     },
     isEmptyText : function(){
-      return this.bodyTokens.length === 0;
+      return this.lineTokens.length === 0;
     },
     isInlineTagEmpty : function(){
       return this.context.getInlineTagDepth() <= 0;
     },
     isOverWithoutLineBreak : function(){
-      return !this.lineBreak && (this.bodyTokens.length > 0);
+      return !this.lineBreak && (this.lineTokens.length > 0);
     },
     isLineStart : function(){
       return this.stream.pos == this.lineStartPos;
     },
-    isFirstLine : function(){
-      return this.lineStartPos === 0;
-    },
-    inheritParentTag : function(tag){
-      var parent_tag = this.context.getCurBlockTag();
-      if(parent_tag){
-	tag.inherit(parent_tag);
-      }
-    },
     pushTag : function(tag){
-      this.context.pushInlineTag(tag, this.parent);
+      this.context.pushInlineTag(tag, this.line);
     },
     pushBackToken : function(){
       this.stream.prev();
-    },
-    popFirstLine : function(){
-      var tag = this.context.popInlineTagByName(":first-line");
-      if(tag){
-	this.addElement(tag.getCloseTag(), {
-	  advance:0,
-	  extent:0,
-	  fontSize:0
-	});
-      }
-    },
-    popTagByName : function(name){
-      this.context.popInlineTagByName(name);
     },
     findFirstText : function(){
       return this.stream.findTextNext(this.lineStartPos);
@@ -6914,41 +7026,58 @@ var LineContext = (function(){
       return token;
     },
     getTextTokenLength : function(){
-      return this.bodyTokens.length;
-    },
-    getInlineFontSize : function(){
-      return this.context.getInlineFontSize(this.parent);
+      return this.lineTokens.length;
     },
     getRestMeasure : function(){
-      return this.parent.getContentMeasure() - this.curMeasure;
+      return this.line.getContentMeasure() - this.curMeasure;
     },
     getMaxMeasure : function(){
       return this.maxMeasure;
     },
-    getParentFlow : function(){
-      return this.parent.flow;
-    },
     addStyle : function(tag){
       this.context.addStyle(tag);
     },
-    addElement : function(element, opt){
-      if(opt.fontSize > this.maxFontSize){
-	this._setMaxFontSize(opt.fontSize);
+    addElement : function(element){
+      var advance = this.getElementAdvance(element);
+      if(!this.canContain(element, advance)){
+	throw "OverflowInline";
       }
-      if(opt.extent > this.maxExtent){
-	this._setMaxExtent(opt.extent);
+      var font_size = this.getElementFontSize(element);
+      if(font_size > this.maxFontSize){
+	this._setMaxFontSize(font_size);
       }
-      if(element instanceof Ruby){
-	this._addRuby(element);
-      } else if(Token.isTag(element)){
+      var extent = this.getElementExtent(element);
+      if(extent > this.maxExtent){
+	this._setMaxExtent(extent);
+      }
+      if(Token.isTag(element)){
 	this._addTag(element);
-      } else if (element._type === "inline-block"){
-	this._addInlineBlock(element);
+      } else if(element instanceof Ruby){
+	this._addRuby(element);
+      } else if (element instanceof Box){
+	if(element.logicalFloat){
+	  this._setLogicalFloat(element, element.logicalFloat);
+	}
+	if(element._type === "text-line"){
+	  this._addTextLine(element);
+	} else {
+	  this._addInlineBlock(element);
+	}
       } else {
 	this._addText(element);
       }
-      if(opt.advance > 0){
-	this._addAdvance(opt.advance);
+      if(advance > 0){
+	this._addAdvance(advance);
+      }
+    },
+    _setLogicalFloat : function(element, logical_float){
+      switch(logical_float){
+      case "start":
+	element.forward = true;
+	break;
+      case "end":
+	element.backward = true;
+	break;
       }
     },
     setAnchor : function(anchor_name){
@@ -6962,20 +7091,14 @@ var LineContext = (function(){
       return this.context.createInlineRoot();
     },
     createLine : function(){
-      // if first-line, deactivate first line tag.
-      if(this.isFirstLine()){
-	this.popFirstLine();
+      if(this.curMeasure === 0){
+	return this._createEmptyLine();
       }
       // if overflow measure without line-break, try to justify.
-      if(this.isOverWithoutLineBreak() && this.parent.canJustify()){
+      if(this.isOverWithoutLineBreak()){
 	this.justify(this.lastToken);
       }
-      var text_line = this._createTextLine();
-      if(this.isRubyLine || this.lineRate <= 1.0){
-	return text_line;
-      }
-      var ruby_line = this._createRubyLine(text_line);
-      return this._createLineBox(text_line, ruby_line);
+      return this._createTextLine();
     },
     justify : function(last_token){
       var head_token = last_token;
@@ -6984,7 +7107,7 @@ var LineContext = (function(){
       
       // head text of next line meets head-NG.
       if(head_token && Token.isChar(head_token) && head_token.isHeadNg()){
-	this.bodyTokens = this._justifyHead(head_token);
+	this.lineTokens = this._justifyHead(head_token);
 	if(this.stream.getPos() != backup_pos){ // some text is moved by head-NG.
 	  tail_token = this.stream.findTextPrev(); // search tail_token from new stream position pointing to new head pos.
 	  // if new head is single br, this must be included in current line, so skip it.
@@ -6995,7 +7118,7 @@ var LineContext = (function(){
       }
       // tail text of this line meets tail-NG.
       if(tail_token && Token.isChar(tail_token) && tail_token.isTailNg()){
-	this.bodyTokens = this._justifyTail(tail_token);
+	this.lineTokens = this._justifyTail(tail_token);
       }
     },
     _addAdvance : function(advance){
@@ -7007,9 +7130,6 @@ var LineContext = (function(){
     },
     _setMaxFontSize : function(max_font_size){
       this.maxFontSize = max_font_size;
-      if(!this.isRubyLine){
-	this.rubyLineExtent = Math.floor(max_font_size * this.rubyLineRate);
-      }
     },
     _setKerning : function(token){
       this.prevText = this.lastText;
@@ -7053,38 +7173,37 @@ var LineContext = (function(){
       }
       return 0.5;
     },
+    _pushElement : function(element){
+      if(element.forward){
+	this.startTokens.push(element);
+      } else if(element.backward){
+	this.endTokens.push(element);
+      } else {
+	this.lineTokens.push(element);
+      }
+    },
+    _getLineTokens : function(){
+      return this.startTokens.concat(this.lineTokens).concat(this.endTokens);
+    },
     _addRuby : function(element){
-      this.bodyTokens = this.bodyTokens.concat(element.getRbs());
-      this.rubyTokens.push(element);
+      this._pushElement(element);
     },
     _addTag : function(element){
-      this.bodyTokens.push(element);
+      this._pushElement(element);
     },
     _addInlineBlock : function(element){
-      this.bodyTokens.push(element);
+      this._pushElement(element);
     },
-    _addEmpha : function(empha, element){
-      var mark = empha.getCssAttr("empha-mark") || "&#x2022;";
-      this.emphaChars.push(new EmphaChar({
-	data:mark,
-	parent:element,
-	startPos:this.curMeasure
-      }));
+    _addTextLine : function(element){
+      this._pushElement(element);
+      this.charCount += element.getCharCount();
     },
     _addText : function(element){
       // text element
-      this.bodyTokens.push(element);
+      this._pushElement(element);
 
       // count up char count of line
       this.charCount += element.getCharCount();
-
-      // check empha tag is open.
-      var empha = this.context.findInlineTag(function(tag){ return tag.isEmphaTag(); });
-
-      // if emphasis tag is open, add emphasis-char to ruby line.
-      if(empha){
-	this._addEmpha(empha, element);
-      }
     },
     // fix line that is started with wrong text.
     _justifyHead : function(head_token){
@@ -7098,13 +7217,13 @@ var LineContext = (function(){
       });
       // no head NG, just return texts as they are.
       if(count <= 0){
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if one head NG, push it into current line.
       if(count === 1){
-	this.bodyTokens.push(head_token);
+	this._pushElement(head_token);
 	this.stream.setPos(head_token.pos + 1);
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if more than two head NG, find non NG text from tail, and cut the line at the pos.
       var normal_pos = -1;
@@ -7120,17 +7239,17 @@ var LineContext = (function(){
       });
       // if no proper pos is found in current line, give up justifying.
       if(normal_pos < 0){
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if normal pos is found, pop line until that pos.
       var ptr = head_token.pos;
       while(ptr > normal_pos){
-	this.bodyTokens.pop();
+	this.lineTokens.pop();
 	ptr--;
       }
       // set stream position at the normal pos.
       this.stream.setPos(normal_pos);
-      return this.bodyTokens;
+      return this.lineTokens;
     },
     // fix line that is ended with wrong text.
     _justifyTail : function(tail_token){
@@ -7144,13 +7263,13 @@ var LineContext = (function(){
       });
       // no tail NG, just return texts as they are.
       if(count <= 0){
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if one tail NG, pop it(tail token is displayed in next line).
       if(count === 1){
-	this.bodyTokens.pop();
+	this.lineTokens.pop();
 	this.stream.setPos(tail_token.pos);
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if more than two tail NG, find non NG text from tail, and cut the line at the pos.
       var normal_pos = -1;
@@ -7166,364 +7285,349 @@ var LineContext = (function(){
       });
       // if no proper pos is found in current line, give up justifying.
       if(normal_pos < 0){
-	return this.bodyTokens;
+	return this.lineTokens;
       }
       // if normal pos is found, pop line until that pos.
       var ptr = tail_token.pos;
       while(ptr > normal_pos){
-	this.bodyTokens.pop();
+	this.lineTokens.pop();
 	ptr--;
       }
       // set stream postion at the 'next' of normal pos.
       this.stream.setPos(normal_pos + 1);
-      return this.bodyTokens;
+      return this.lineTokens;
+    },
+    _createEmptyLine : function(){
+      this.line.size = this.line.flow.getBoxSize(this.lineMeasure, this.maxFontSize);
+      this.line.setInlineElements([], this.lineMeasure);
+      return this.line;
     },
     _createTextLine : function(){
-      var size = this.parent.flow.getBoxSize(this.lineMeasure, this.maxExtent);
-      return new TextLine({
-	type:"text-line",
-	parent:this.parent,
-	size:size,
-	charCount:this.charCount,
-	fontSize:this.parent.fontSize,
-	color:this.parent.color,
-	tokens:this.bodyTokens,
-	textMeasure:this.curMeasure,
-	textIndent:this.textIndent,
-	letterSpacing:this.letterSpacing,
-	lineRate:1.0
-      });
-    },
-    _createRubyLine : function(text_line){
-      var size = this.parent.flow.getBoxSize(this.lineMeasure, this.rubyLineExtent);
-      return new TextLine({
-	type:"ruby-line",
-	parent:this.parent,
-	size:size,
-	charCount:0,
-	fontSize:this.parent.fontSize,
-	color:this.parent.color,
-	tokens:this.rubyTokens,
-	emphaChars:this.emphaChars,
-	textMeasure:this.curMeasure,
-	textIndent:this.textIndent,
-	letterSpacing:this.letterSpacing,
-	lineRate:this.rubyLineRate,
-	bodyLine:text_line
-      });
-    },
-    _createLineBox : function(text_line, ruby_line){
-      return new LineBox({
-	extent:(this.maxExtent + this.rubyLineExtent),
-	parent:this.parent,
-	rubyLine:ruby_line,
-	textLine:text_line
-      });
+      var ruby_extent = Math.floor(this.maxFontSize * (this.line.lineRate - 1));
+      var max_text_extent = this.maxFontSize + ruby_extent;
+      this.maxExtent = Math.max(this.maxExtent, max_text_extent);
+      this.line.size = this.line.flow.getBoxSize(this.lineMeasure, this.maxExtent);
+      this.line.charCount = this.charCount;
+      this.line.setInlineElements(this._getLineTokens(), this.curMeasure);
+      this.line.textIndent = this.textIndent;
+      return this.line;
     }
   };
 
-  return LineContext;
+  return InlineTreeContext;
 })();
 
 
-// TODO:
-// although it is quite rare situation, ruby disappears when
+// TODO: although it is quite rare situation, ruby disappears when
 // 1. line overflow by tail ruby and
 // 2. it is placed at the head of next line but
 // 3. parent page can't contain the line because of block level overflow.
 // then after rollback and 2nd-yielding by parent generator,
 // ruby disappears because stream already steps to the next pos of ruby.
-// any good idea to solve this problem?
-var InlineGenerator = (function(){
-  function InlineGenerator(markup, stream, context){
+var InlineTreeGenerator = ElementGenerator.extend({
+  init : function(markup, stream, context){
     this.markup = markup;
     this.stream = stream;
     this.context = context;
-    this._hasNext = this.stream.hasNext();
-  }
-
-  // shortcut exception code
-  var BUFFER_END = Exceptions.BUFFER_END;
-  var SKIP = Exceptions.SKIP;
-  var LINE_BREAK = Exceptions.LINE_BREAK;
-  var RETRY = Exceptions.RETRY;
-  var IGNORE = Exceptions.IGNORE;
-  var BREAK = Exceptions.BREAK;
-
-  InlineGenerator.prototype = {
-    hasNext : function(){
-      if(!this._hasNext){
-	return false;
-      }
-      if(this.generator && this.generator.hasNext()){
-	return true;
-      }
-      return this.stream.hasNext();
-    },
-    backup : function(){
-      this.stream.backup();
-    },
-    // caution! : this rollback function is to be ALWAYS called from parent generator.
-    // so do not call this from this generator.
-    rollback : function(){
-      this.stream.rollback();
-      this.generator = null;
-    },
-    yield : function(parent){
-      var ctx = new LineContext(parent, this.stream, this.context);
-
-      // even if extent for basic line is not left,
-      // just break and let parent generator break page.
-      if(!ctx.canContainBasicLine()){
-	return BREAK;
-      }
-
-      // backup inline head position.
-      this.backup();
-
-      while(true){
-	var element = this._yieldElement(ctx);
-
-	if(element == BUFFER_END){
-	  ctx.setLineBreak();
-	  break;
-	} else if(element == SKIP){
-	  return IGNORE;
-	} else if(element == LINE_BREAK){
-	  ctx.setLineBreak();
-	  break;
-	} else if(element == RETRY){
-	  ctx.setLineBreak();
-	  break;
-	} else if(element == IGNORE){
-	  continue;
-	}
-	var advance = this._getAdvance(ctx, element); // size of inline flow.
-	var extent = this._getExtent(ctx, element); // size of block flow.
-	var font_size = this._getFontSize(ctx, element); // font size of element.
-
-	// if overflow inline max, line break.
-	if(!ctx.canContain(element, advance, extent)){
-	  if(this.generator){
-	    this.generator.rollback();
-	  } else {
-	    ctx.pushBackToken();
-	  }
-	  break;
-	}
-	ctx.addElement(element, {
-	  advance:advance,
-	  extent:extent,
-	  fontSize:font_size
-	});
-
-	// if devided word, line break and parse same token again.
-	if(element instanceof Word && element.isDevided()){
-	  ctx.pushBackToken();
-	  break;
-	}
-      }
-      return ctx.createLine();
-    },
-    _getExtent : function(ctx, element){
-      if(Token.isText(element)){
-	return element.fontSize;
-      }
-      if(Token.isTag(element)){
-	if(element.edge){
-	  var font_size = ctx.getInlineFontSize();
-	  var edge_size = element.edge.getExtentSize(ctx.getParentFlow());
-	  return font_size + edge_size;
-	}
-	return 0;
-      }
-      if(element instanceof Ruby){
-	return element.getExtent();
-      }
-      if(element instanceof Box){
-	return element.getBoxExtent(ctx.getParentFlow());
-      }
-      return 0;
-    },
-    _getFontSize : function(ctx, element){
-      if(Token.isText(element)){
-	return element.fontSize;
-      }
-      if(element instanceof Ruby){
-	return element.getFontSize();
-      }
-      return 0;
-    },
-    _getAdvance : function(ctx, element){
-      if(Token.isText(element)){
-	return element.getAdvance(ctx.getParentFlow(), ctx.letterSpacing);
-      }
-      if(Token.isTag(element)){
-	if(element.edge){
-	  return element.edge.getMeasureSize(ctx.getParentFlow());
-	}
-	return 0;
-      }
-      if(element instanceof Ruby){
-	return element.getAdvance(ctx.getParentFlow());
-      }
-      return element.getBoxMeasure(ctx.getParentFlow());
-    },
-    _yieldElement : function(ctx){
-      if(this.generator && this.generator.hasNext()){
-	return this.generator.yield(ctx);
-      }
-      this.generator = null;
-      var token = ctx.getNextToken();
-      return this._yieldToken(ctx, token);
-    },
-    _yieldToken : function(ctx, token){
-      if(token === null){
-	return BUFFER_END;
-      }
-      // CRLF
-      if(Token.isChar(token) && token.isNewLineChar()){
-
-	// if pre, treat CRLF as line break
-	if(ctx.isPreLine()){
-	  return LINE_BREAK;
-	}
-	// others, just ignore
-	return IGNORE;
-      }
-      if(Token.isText(token)){
-	return this._yieldText(ctx, token);
-      }
-      if(Token.isTag(token) && token.getName() === "br"){
-	return LINE_BREAK;
-      }
-      // if pseudo-element tag,
-      // copy style of <this.markup.name>:<pseudo-name> dynamically.
-      if(this.markup && token.isPseudoElementTag()){
-	var pseudo_name = token.getPseudoElementName();
-	var pseudo_css_attr = this.markup.getPseudoCssAttr(pseudo_name);
-	for(var prop in pseudo_css_attr){
-	  if(prop !== "content"){
-	    token.setCssAttr(prop, pseudo_css_attr[prop]);
-	  }
-	}
-      }
-      // if block element, break line and force terminate generator
-      if(token.isBlock()){
-	ctx.pushBackToken(); // push back this token(this block is handled by parent generator).
-	this._hasNext = false; // force terminate
-	return ctx.isEmptyText()? SKIP : LINE_BREAK;
-      }
-      // token is static size tag
-      if(token.hasStaticSize()){
-	return this._yieldStaticElement(ctx, token);
-      }
-      // token is inline-block tag
-      if(token.isInlineBlock()){
-	this.generator = new InlineBlockGenerator(token, ctx.createInlineRoot());
-	return this.generator.yield(ctx);
-      }
-      // token is other inline tag
-      return this._yieldInlineTag(ctx, token);
-    },
-    _yieldStaticElement : function(ctx, tag){
-      ctx.inheritParentTag(tag);
-      var element = PageGenerator.prototype._yieldStaticElement.call(this, ctx.parent, tag, this.context);
-      if(element instanceof Box){
-	element.display = "inline-block";
-      }
-      return element;
-    },
-    _yieldText : function(ctx, text){
-      if(!text.hasMetrics()){
-	text.setMetrics(ctx.getParentFlow(), ctx.getInlineFontSize(), ctx.isBoldEnable());
-      }
-      switch(text._type){
-      case "char":
-      case "tcy":
-	return text;
-      case "word":
-	return this._yieldWord(ctx, text);
-      }
-    },
-    _yieldInlineTag : function(ctx, tag){
-      switch(tag.getName()){
-      case "script":
-	return IGNORE;
-
-      case "style":
-	ctx.addStyle(tag);
-	return IGNORE;
-
-      case "ruby":
-	// assert metrics only once to avoid dup update by rollback
-	if(typeof tag.fontSize === "undefined"){
-	  tag.fontSize = ctx.getInlineFontSize();
-	  tag.letterSpacing = ctx.letterSpacing;
-	}
-	this.generator = new RubyGenerator(tag);
-	return this.generator.yield(ctx);
-
-      case "a":
-	var anchor_name = tag.getTagAttr("name");
-	if(anchor_name){
-	  ctx.setAnchor(anchor_name);
-	}
-	break;
-
-      default:
-	break;
-      }
-      // single tag does not update tag stack of inline, so just return it.
-      // or if tag is already parsed, just return too.
-      if(tag.isSingleTag() || tag.parsed){
-	ctx.inheritParentTag(tag);
-	return tag;
-      }
-      // if inline level edge is defined,
-      // get edge and set it to markup data because inline level does not create box.
-      // this edge(in markup data) is evaluated at InlineEvaluator::evalTagCss.
-      var edge = tag.getBoxEdge(ctx.getParentFlow(), ctx.getInlineFontSize(), ctx.getMaxMeasure());
-      if(edge){
-	tag.edge = edge;
-      }
-      if(tag.isOpen()){
-	ctx.pushTag(tag);
-      } else {
-	ctx.popTagByName(tag.getOpenTagName());
-      }
-      // to avoid duplicate parsing by parent rollback,
-      // we set parsed flag to this tag object.
-      tag.parsed = true;
-      return tag;
-    },
-    _yieldWord : function(ctx, word){
-      var advance = word.getAdvance(ctx.getParentFlow(), ctx.letterSpacing);
-
-      // if advance of this word is less than ctx.maxMeasure, just return.
-      if(advance <= ctx.maxMeasure){
-	word.setDevided(false);
-	return word;
-      }
-      // if advance is lager than max_measure,
-      // we must cut this word into some parts.
-      var font_size = ctx.getInlineFontSize();
-      var is_bold = ctx.isBoldEnable();
-      var flow = ctx.getParentFlow();
-      var part = word.cutMeasure(ctx.maxMeasure); // get sliced word
-      part.setMetrics(flow, font_size, is_bold); // metrics for first half
-      word.setMetrics(flow, font_size, is_bold); // metrics for second half
-      return part;
+    this._terminate = false;
+    this.lineNo = 0;
+  },
+  hasNext : function(){
+    if(this._terminate){
+      return false;
     }
-  };
+    if(this.generator && this.generator.hasNext()){
+      return true;
+    }
+    return this.stream.hasNext();
+  },
+  backup : function(){
+    this.stream.backup();
+  },
+  // caution! : this rollback function is to be ALWAYS called from parent generator.
+  // so do not call this from this generator.
+  rollback : function(){
+    this.stream.rollback();
+    this.generator = null;
+  },
+  _getLineSize : function(parent){
+    var measure = parent.getContentMeasure();
+    var extent = parent.getContentExtent();
+    return parent.flow.getBoxSize(measure, extent);
+  },
+  _setFirstLineStyle : function(line, parent){
+    var css_attr = this.markup? this.markup.getPseudoElementCssAttr("first-line") : {};
+    if(!Obj.isEmpty(css_attr)){
+      var first_line_tag = new Tag("<first-line>");
+      first_line_tag.setCssAttrs(css_attr);
+      BoxStyle.set(first_line_tag, line, parent);
+    }
+  },
+  _createLine  : function(parent){
+    var size = this._getLineSize(parent);
+    var line = Layout.createTextLine(size, parent);
+    if(this.lineNo === 0){
+      this._setFirstLineStyle(line, parent);
+    }
+    line.markup = this.markup;
+    line.lineNo = this.lineNo;
+    return line;
+  },
+  yield : function(parent){
+    var line = this._createLine(parent);
+    return this._yield(line);
+  },
+  _yield : function(line){
+    var ctx = new InlineTreeContext(line, this.stream, this.context);
 
-  return InlineGenerator;
-})();
+    // even if extent for basic line is not left,
+    // just break and let parent generator break page.
+    if(!ctx.canContainBasicLine()){
+      return Exceptions.BREAK;
+    }
+
+    // backup inline head position.
+    this.backup();
+
+    while(true){
+      var element = this._yieldElement(ctx);
+
+      if(element == Exceptions.BUFFER_END){
+	ctx.setLineBreak();
+	break;
+      } else if(element == Exceptions.SKIP){
+	return Exceptions.IGNORE;
+      } else if(element == Exceptions.LINE_BREAK){
+	ctx.setLineBreak();
+	break;
+      } else if(element == Exceptions.RETRY){
+	ctx.setLineBreak();
+	break;
+      } else if(element == Exceptions.IGNORE){
+	continue;
+      } else if(element == Exceptions.BREAK){
+	ctx.setLineBreak();
+	break;
+      }
+
+      try {
+	ctx.addElement(element);
+      } catch(e){
+	if(this.generator){
+	  this.generator.rollback();
+	} else {
+	  ctx.pushBackToken();
+	}
+	break;
+      }
+
+      // if devided word, line break and parse same token again.
+      if(element instanceof Word && element.isDevided()){
+	ctx.pushBackToken();
+	break;
+      }
+    } // while(true)
+
+    line = ctx.createLine();
+    if(!this.hasNext()){
+      this._onLastTree(ctx, line);
+    }
+    this._onCompleteTree(ctx, line);
+    return line;
+  },
+  _onLastTree : function(ctx, line){
+  },
+  _onCompleteTree : function(ctx, line){
+    line.setMaxExtent(ctx.getMaxExtent());
+    line.setMaxFontSize(ctx.getMaxFontSize());
+    this.lineNo++;
+  },
+  _yieldElement : function(ctx){
+    if(this.generator && this.generator.hasNext()){
+      return this.generator.yield(ctx.line);
+    }
+    this.generator = null;
+    var token = ctx.getNextToken();
+    return this._yieldToken(ctx, token);
+  },
+  _yieldToken : function(ctx, token){
+    if(token === null){
+      return Exceptions.BUFFER_END;
+    }
+    if(Token.isTag(token)){
+      this.context.inheritTag(token);
+    }
+    if(token instanceof Ruby){
+      return token;
+    }
+    // CRLF
+    if(Token.isChar(token) && token.isNewLineChar()){
+
+      // if pre, treat CRLF as line break
+      if(ctx.isPreLine()){
+	return Exceptions.LINE_BREAK;
+      }
+      // others, just ignore
+      return Exceptions.IGNORE;
+    }
+    if(Token.isText(token)){
+      return this._yieldText(ctx, token);
+    }
+    if(Token.isTag(token) && token.getName() === "br"){
+      return Exceptions.LINE_BREAK;
+    }
+    if(Token.isTag(token) && token.getName() === "first-letter"){
+      token.setFirstLetter(); // load first-letter style
+    }
+    // if block element, break line and force terminate generator
+    if(token.isBlock()){
+      ctx.pushBackToken(); // push back this token(this block is handled by parent generator).
+      this._terminate = true; // force terminate
+      return ctx.isEmptyText()? Exceptions.SKIP : Exceptions.LINE_BREAK;
+    }
+    // token is static size tag
+    if(token.hasStaticSize()){
+      return this._yieldStaticElement(ctx.line, token);
+    }
+    // token is inline-block tag
+    if(token.isInlineBlock()){
+      this.generator = new InlineBlockGenerator(token, ctx.createInlineRoot());
+      return this.generator.yield(ctx.line);
+    }
+    // token is other inline tag
+    return this._yieldInlineTag(ctx, token);
+  },
+  _yieldText : function(ctx, text){
+    if(!text.hasMetrics()){
+      text.setMetrics(ctx.getLineFlow(), ctx.getFontSize(), ctx.isTextBold());
+    }
+    switch(text._type){
+    case "char":
+    case "tcy":
+      return text;
+    case "word":
+      return this._yieldWord(ctx, text);
+    }
+  },
+  _yieldWord : function(ctx, word){
+    var advance = word.getAdvance(ctx.getLineFlow(), ctx.getLetterSpacing());
+
+    // if advance of this word is less than ctx.maxMeasure, just return.
+    if(advance <= ctx.maxMeasure){
+      word.setDevided(false);
+      return word;
+    }
+    // if advance is lager than max_measure,
+    // we must cut this word into some parts.
+    var font_size = ctx.getFontSize();
+    var max_measure = ctx.maxMeasure;
+    var is_bold = ctx.isTextBold();
+    var flow = ctx.getLineFlow();
+    var part = word.cutMeasure(font_size, max_measure); // get sliced word
+    part.setMetrics(flow, font_size, is_bold); // metrics for first half
+    word.setMetrics(flow, font_size, is_bold); // metrics for second half
+    return part;
+  },
+  _yieldInlineTag : function(ctx, tag){
+    if(tag.isSingleTag()){
+      return tag;
+    }
+    switch(tag.getName()){
+    case "script":
+      return Exceptions.IGNORE;
+    case "style":
+      ctx.addStyle(tag);
+      return Exceptions.IGNORE;
+    default:
+      this.generator = this._createChildInlineTreeGenerator(ctx, tag);
+      return this.generator.yield(ctx.line);
+    }
+  },
+  _createChildInlineTreeGenerator : function(ctx, tag){
+    switch(tag.getName()){
+    case "ruby":
+      return new RubyGenerator(tag, this.context);
+    case "a":
+      return new LinkGenerator(tag, this.context);
+    default:
+      return new ChildInlineTreeGenerator(tag, this.context);
+    }
+  }
+});
 
 
-var PageGenerator = BlockGenerator.extend({
+var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
+  init : function(markup, context){
+    this.markup = markup;
+    this.context = context;
+    this.context.pushInlineTag(this.markup);
+    this.stream = this._createStream();
+    this.lineNo = 0;
+  },
+  _createStream : function(){
+    return new TokenStream(this.markup.getContent());
+  },
+  _createLine : function(parent){
+    var line = this._super(parent);
+    this._setBoxStyle(line, parent);
+    return line;
+  },
+  _getLineSize : function(parent){
+    var measure = parent.getTextRestMeasure();
+    var extent = parent.getContentExtent();
+    return parent.flow.getBoxSize(measure, extent);
+  },
+  _onLastTree : function(){
+    this.context.popInlineTag();
+  },
+  _onCompleteTree : function(ctx, line){
+    line.shortenMeasure();
+    this.lineNo++;
+  }
+});
+
+
+var RubyGenerator = ChildInlineTreeGenerator.extend({
+  _createStream : function(){
+    return new RubyTagStream(this.markup.getContent());
+  },
+  _yieldElement : function(ctx){
+    var ruby = this._super(ctx);
+    if(typeof ruby === "number"){
+      return ruby; // exception
+    }
+    // avoid overwriting metrics.
+    if(!ruby.hasMetrics()){
+      ruby.setMetrics(ctx.getLineFlow(), ctx.getFontSize(), ctx.getLetterSpacing());
+    }
+    return ruby;
+  }
+});
+
+
+var RtGenerator = ChildInlineTreeGenerator.extend({
+  _getLineSize : function(parent){
+    var measure = parent.getContentMeasure();
+    var extent = parent.getContentExtent();
+    return parent.flow.getBoxSize(measure, extent);
+  }
+});
+
+
+var LinkGenerator = ChildInlineTreeGenerator.extend({
   init : function(markup, context){
     this._super(markup, context);
+    var anchor_name = markup.getTagAttr("name");
+    if(anchor_name){
+      context.setAnchor(anchor_name);
+    }
+  }
+});
+
+var BlockTreeGenerator = ElementGenerator.extend({
+  init : function(markup, context){
+    this._super(markup, context);
+    this.context.pushBlockTag(this.markup);
     this.generator = null;
     this.rollbackCount = 0;
     this.stream = this._createStream();
@@ -7550,25 +7654,32 @@ var PageGenerator = BlockGenerator.extend({
       this.generator.rollback();
     }
   },
+  getCurGenerator : function(){
+    if(this.generator && this.generator.hasNext()){
+      return this.generator;
+    }
+    return null;
+  },
   // if size is not defined, rest size of parent is used.
   // if parent is null, root page is generated.
   yield : function(parent, size){
     if(this.stream.isEmpty()){
       return Exceptions.SKIP;
     }
+
     // let this generator yield PAGE_BREAK exception(only once).
     if(this.pageBreakBefore){
       this.pageBreakBefore = false;
       return Exceptions.PAGE_BREAK;
     }
-    this.context.pushBlock(this.markup);
-
     var page_box, page_size;
-    page_size = size || (parent? parent.getRestSize() : null);
+    page_size = size || this._getBoxSize(parent);
     page_box = this._createBox(page_size, parent);
     var ret = this._yieldPageTo(page_box);
-    this.context.popBlock();
     return ret;
+  },
+  _getBoxSize : function(parent){
+    return this._getMarkupStaticSize() || parent.getRestSize();
   },
   // fill page with child page elements.
   _yieldPageTo : function(page){
@@ -7599,7 +7710,8 @@ var PageGenerator = BlockGenerator.extend({
 	this.rollback();
 	break;
       }
-      page.addChild(element);
+
+      page.addChildBlock(element);
 
       if(cur_extent == max_extent){
 	break;
@@ -7613,12 +7725,12 @@ var PageGenerator = BlockGenerator.extend({
       page.clearBorderBefore();
     }
     if(!this.hasNext()){
-      this._onLastPage(page);
+      this._onLastTree(page);
     } else {
       page.clearBorderAfter();
     }
     this.rollbackCount = 0;
-    this._onCompletePage(page);
+    this._onCompleteTree(page);
 
     // if content is not empty, increment localPageNo.
     if(cur_extent > 0){
@@ -7630,10 +7742,10 @@ var PageGenerator = BlockGenerator.extend({
     return this.markup.getCssAttr("page-break-before", "") === "always";
   },
   _isEmptyElement : function(flow, element){
-    return (element instanceof Box) && (element.getContentExtent(flow) <= 0);
+    return (element instanceof Box) && !element.isTextLine() && (element.getContentExtent(flow) <= 0);
   },
   _createStream : function(){
-    var source = this._createSource(this.markup.content);
+    var source = this._createSource(this.markup.getContent());
     return new TokenStream(source);
   },
   // caution:
@@ -7646,10 +7758,11 @@ var PageGenerator = BlockGenerator.extend({
       .replace(/\s+$/, "") // discard tail space
       .replace(/\r/g, ""); // discard CR
   },
-  _onLastPage : function(page){
+  _onLastTree : function(page){
+    this.context.popBlockTag();
   },
   // called when page box is fully filled by blocks.
-  _onCompletePage : function(page){
+  _onCompleteTree : function(page){
   },
   _yieldPageElement : function(parent){
     if(this.generator && this.generator.hasNext()){
@@ -7659,6 +7772,9 @@ var PageGenerator = BlockGenerator.extend({
     if(token === null){
       return Exceptions.BUFFER_END;
     }
+    if(Token.isTag(token)){
+      this.context.inheritTag(token);
+    }
     // in block level, new-line character makes no sense, just ignored.
     if(Token.isChar(token) && token.isNewLineChar()){
       return Exceptions.IGNORE;
@@ -7666,11 +7782,14 @@ var PageGenerator = BlockGenerator.extend({
     if(Token.isTag(token) && token.isPageBreakTag()){
       return Exceptions.PAGE_BREAK;
     }
+    if(Token.isTag(token) && token.getName() === "first-letter"){
+      token.setFirstLetter(); // load first-letter style
+    }
     if(Token.isInline(token)){
       // this is not block level element, so we push back this token,
-      // and delegate this stream to InlineGenerator from the head of this inline element.
+      // and delegate this stream to InlineTreeGenerator from the head of this inline element.
       this.stream.prev();
-      this.generator = new InlineGenerator(this.markup, this.stream, this.context);
+      this.generator = new InlineTreeGenerator(this.markup, this.stream, this.context);
       return this.generator.yield(parent);
     }
     return this._yieldBlockElement(parent, token);
@@ -7687,11 +7806,11 @@ var PageGenerator = BlockGenerator.extend({
       var generator = new InlinePageGenerator(tag, this.context.createInlineRoot());
       return generator.yield(parent, inline_size);
     }
-    this.generator = this._createChildPageGenerator(parent, tag);
+    this.generator = this._createChildBlockTreeGenerator(parent, tag);
     return this.generator.yield(parent);
   },
   _yieldStaticTag : function(parent, tag){
-    var box = this._yieldStaticElement(parent, tag, this.context);
+    var box = this._yieldStaticElement(parent, tag);
     if(!(box instanceof Box)){
       return box; // exception
     }
@@ -7708,30 +7827,13 @@ var PageGenerator = BlockGenerator.extend({
 
     return box; // return as single block.
   },
-  // this function is also called from InlineGenerator via 'call' to yield an inline block element.
-  // so to give a clear scope, we accept 'context' as last argument,
-  // although it is same as 'this.context' in this generator.
-  _yieldStaticElement : function(parent, tag, context){
-    var generator;
-    var static_size = tag.getStaticSize(parent.fontSize || Layout.fontSize, parent.getContentMeasure());
-    if(tag.getName() === "img"){
-      generator = new ImageGenerator(tag, context);
-    } else if(tag.hasFlow()){
-      // if original flow defined, yield as inline page
-      generator = new InlinePageGenerator(tag, context.createInlineRoot());
-    } else {
-      // if static size is simply defined, treat as just an embed html with static size.
-      generator = new InlineBoxGenerator(tag, context);
-    }
-    return generator.yield(parent, static_size);
-  },
   _yieldFloatedBlock : function(parent, aligned_box, tag){
-    var generator = new FloatedBlockGenerator(this.stream, this.context, aligned_box);
+    var generator = new FloatedBlockTreeGenerator(this.stream, this.context, aligned_box);
     var block = generator.yield(parent);
     this.generator = generator.getCurGenerator(); // inherit generator of aligned area
     return block;
   },
-  _createChildPageGenerator : function(parent, tag){
+  _createChildBlockTreeGenerator : function(parent, tag){
     switch(tag.getName()){
     case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
       return this._getHeaderLineGenerator(parent, tag);
@@ -7754,7 +7856,7 @@ var PageGenerator = BlockGenerator.extend({
     case "hr":
       return this._getHorizontalRuleGenerator(parent, tag);
     default:
-      return new ChildPageGenerator(tag, this.context);
+      return new ChildBlockTreeGenerator(tag, this.context);
     }
   },
   _getSectionContentGenerator : function(parent, tag){
@@ -7775,7 +7877,7 @@ var PageGenerator = BlockGenerator.extend({
   _getListItemGenerator : function(parent, tag){
     var list_style = parent.listStyle || null;
     if(list_style === null){
-      return new ChildPageGenerator(tag, this.context);
+      return new ChildBlockTreeGenerator(tag, this.context);
     }
     if(list_style.isInside()){
       return new InsideListItemGenerator(tag, parent, this.context);
@@ -7796,52 +7898,30 @@ var PageGenerator = BlockGenerator.extend({
   }
 });
 
-var InlineBlockGenerator = PageGenerator.extend({
-  init : function(markup, context){
-    this.markup = markup;
-    this.context = context;
-    this.stream = this._createStream();
-  },
+var InlineBlockGenerator = BlockTreeGenerator.extend({
   _getBoxType : function(){
     return "inline-block";
-  },
-  // ctx : LineContext
-  yield : function(ctx){
-    var rest_measure = ctx.restMeasure;
-    var rest_extent = ctx.restExtent;
-    var parent_flow = ctx.getParentFlow();
-    var size = parent_flow.getBoxSize(rest_measure, rest_extent);
-    var box = this._createBox(size, ctx.parent);
-    box = this._yieldPageTo(box);
-    if(typeof box === "number"){
-      return box; // exception
-    }
-    box.shortenBox();
-    if(!box.isTextVertical()){
-      box.display = "inline-block";
-    }
-    return box;
   }
 });
 
-var ChildPageGenerator = PageGenerator.extend({
+var ChildBlockTreeGenerator = BlockTreeGenerator.extend({
   // resize page to sum of total child size.
-  _onCompletePage : function(page){
+  _onCompleteTree : function(page){
     page.shortenExtent(page.getParentFlow());
   }
 });
 
-var SectionContentGenerator = ChildPageGenerator.extend({
+var SectionContentGenerator = ChildBlockTreeGenerator.extend({
   init : function(markup, context){
     this._super(markup, context);
     this.context.logStartSection(markup);
   },
-  _onLastPage : function(page){
+  _onLastTree : function(page){
     this.context.logEndSection(this.markup);
   }
 });
 
-var SectionRootGenerator = ChildPageGenerator.extend({
+var SectionRootGenerator = ChildBlockTreeGenerator.extend({
   init : function(markup, context){
     this._super(markup, context);
     this.context.startSectionRoot(markup);
@@ -7868,13 +7948,14 @@ var SectionRootGenerator = ChildPageGenerator.extend({
   setAnchor : function(name, page_no){
     this.context.setAnchor(name, page_no);
   },
-  _onLastPage : function(page){
+  _onLastTree : function(page){
     this.context.endSectionRoot(this.markup);
+    this._super();
   }
 });
 
-var HeaderGenerator = ChildPageGenerator.extend({
-  _onCompletePage : function(page){
+var HeaderGenerator = ChildBlockTreeGenerator.extend({
+  _onCompleteTree : function(page){
     this._super(page);
     page.id = Css.addNehanHeaderPrefix(this.context.logSectionHeader(this.markup));
   },
@@ -7883,7 +7964,7 @@ var HeaderGenerator = ChildPageGenerator.extend({
   }
 });
 
-var BodyPageGenerator = SectionRootGenerator.extend({
+var BodyBlockTreeGenerator = SectionRootGenerator.extend({
   init : function(data, ctx){
     var context = ctx || new DocumentContext();
     var markup = data;
@@ -7892,10 +7973,12 @@ var BodyPageGenerator = SectionRootGenerator.extend({
     }
     this._super(markup, context);
   },
-  // create root page, __size and __parent are ignored.
-  _createBox : function(__size, __parent){
-    var box = Layout.createStdBox("body");
-    this._setBoxStyle(box);
+  _getBoxSize : function(){
+    return Layout.getStdPageSize();
+  },
+  _createBox : function(size, parent){
+    var box = Layout.createRootBox(size, "body");
+    this._setBoxStyle(box, null);
     box.percent = this.stream.getSeekPercent();
     box.seekPos = this.stream.getSeekPos();
     box.pageNo = this.context.getPageNo();
@@ -7905,18 +7988,18 @@ var BodyPageGenerator = SectionRootGenerator.extend({
     // box.lazy is a flag to see whether this box can be evaluated later.
     // when lazy is enabled, we can evaluate the box at any time, it always yields same html.
     // but this lazy flag at this time is not confirmed, it's temporary.
-    // this flag is confirmed when _onCompletePage.
+    // this flag is confirmed when _onCompleteTree.
     // if context is 'also' empty when page is completed, lazy flag is confirmed.
     box.lazy = this.context.isEmptyMarkupContext();
     box.css["font-size"] = Layout.fontSize + "px";
     return box;
   },
-  _onCompletePage : function(page){
+  _onCompleteTree : function(page){
     page.styles = this.context.getPageStyles(page.pageNo);
 
     // lazy is confirmed when
     // 1. inline level of context is empty when _createBox.
-    // 2. inline level of context is 'also' empty when _onCompletePage.
+    // 2. inline level of context is 'also' empty when _onCompleteTree.
     // in short, if both head and tail are context free, lazy evaluation is enabled.
     page.lazy = page.lazy && this.context.isEmptyMarkupContext();
 
@@ -7926,11 +8009,14 @@ var BodyPageGenerator = SectionRootGenerator.extend({
   }
 });
 
-var FloatedBlockGenerator = PageGenerator.extend({
+var FloatedBlockTreeGenerator = BlockTreeGenerator.extend({
   init : function(stream, context, floated_box){
     this.context = context;
     this.stream = stream;
     this.floatedBox = floated_box;
+  },
+  _onLastTree : function(){
+    // do nothing
   },
   yield: function(parent){
     var backupPos2 = this.stream.backupPos; // backup the 'backup pos'
@@ -7938,11 +8024,11 @@ var FloatedBlockGenerator = PageGenerator.extend({
     var rest_box = this._getFloatedRestBox(parent, wrap_box, this.floatedBox);
     this._yieldPageTo(rest_box);
     if(this.floatedBox.logicalFloat === "start"){
-      wrap_box.addChild(this.floatedBox);
-      wrap_box.addChild(rest_box);
+      wrap_box.addChildBlock(this.floatedBox);
+      wrap_box.addChildBlock(rest_box);
     } else {
-      wrap_box.addChild(rest_box);
-      wrap_box.addChild(this.floatedBox);
+      wrap_box.addChildBlock(rest_box);
+      wrap_box.addChildBlock(this.floatedBox);
     }
     this.stream.backupPos = backupPos2; // restore backup pos
     return wrap_box;
@@ -7970,20 +8056,24 @@ var FloatedBlockGenerator = PageGenerator.extend({
 
 // InlinePageGenerator yield the first page only,
 // because size of first page can be defined, but continuous pages are not.
-var InlinePageGenerator = PageGenerator.extend({
+var InlinePageGenerator = BlockTreeGenerator.extend({
   hasNext : function(){
     return false;
   },
-  yield : function(parent, size){
+  yield : function(parent){
+    var size = this._getBoxSize(parent);
     var wrap = Layout.createBox(size, parent, "div");
     var page = this._super(wrap); // yield page to wrap.
-    wrap.addChild(page);
+    if(typeof page === "number"){
+      return page; // exception
+    }
+    wrap.addChildBlock(page);
     wrap.logicalFloat = page.logicalFloat;
     return wrap;
   }
 });
 
-var ParallelPageGenerator = ChildPageGenerator.extend({
+var ParallelGenerator = ChildBlockTreeGenerator.extend({
   init : function(generators, markup, context, partition){
     this.generators = generators;
     this.markup = markup;
@@ -8013,7 +8103,7 @@ var ParallelPageGenerator = ChildPageGenerator.extend({
     wrap_page.setFlow(wrap_flow);
     return this._yieldChilds(wrap_page, parent);
   },
-  _setEdge : function(box, edge){
+  _setBoxEdge : function(box, edge){
     // ignore edge
     // because each edge of child layout are set by child-generators.
   },
@@ -8055,14 +8145,14 @@ var ParallelPageGenerator = ChildPageGenerator.extend({
     List.iter(child_pages, function(child_page){
       if(child_page){
 	child_page.setContentExtent(child_flow, max_content_extent);
-	wrap_page.addChild(child_page);
+	wrap_page.addChildBlock(child_page);
       }
     });
     return wrap_page;
   }
 });
 
-var ParaChildPageGenerator = ChildPageGenerator.extend({
+var ParaChildGenerator = ChildBlockTreeGenerator.extend({
   _onReadyBox : function(box, parent){
     // wrap box(parent) has parallel flow, so flip it to get original one.
     var flow = parent.getParallelFlipFlow();
@@ -8070,7 +8160,7 @@ var ParaChildPageGenerator = ChildPageGenerator.extend({
   }
 });
 
-var TableGenerator = ChildPageGenerator.extend({
+var TableGenerator = ChildBlockTreeGenerator.extend({
   _createStream : function(){
     return new TableTagStream(this.markup);
   },
@@ -8087,7 +8177,7 @@ var TableGenerator = ChildPageGenerator.extend({
   }
 });
 
-var TableRowGroupGenerator = ChildPageGenerator.extend({
+var TableRowGroupGenerator = ChildBlockTreeGenerator.extend({
   _onCreateBox : function(box, parent){
     box.partition = parent.partition;
   },
@@ -8096,75 +8186,75 @@ var TableRowGroupGenerator = ChildPageGenerator.extend({
   }
 });
 
-var TableRowGenerator = ParallelPageGenerator.extend({
+var TableRowGenerator = ParallelGenerator.extend({
   init : function(markup, parent, context){
     var partition = parent.partition.getPartition(markup.childs.length);
     var generators = List.map(markup.childs, function(td){
-      return new ParaChildPageGenerator(td, context.createInlineRoot());
+      return new ParaChildGenerator(td, context.createInlineRoot());
     });
     this._super(generators, markup, context, partition);
   }
 });
 
-var ListGenerator = ChildPageGenerator.extend({
+var ListGenerator = ChildBlockTreeGenerator.extend({
   _onCreateBox : function(box, parent){
     var item_count = this.stream.getTokenCount();
     var list_style_type = this.markup.getCssAttr("list-style-type", "none");
     var list_style_pos = this.markup.getCssAttr("list-style-position", "outside");
     var list_style_image = this.markup.getCssAttr("list-style-image", "none");
+    var list_style_format = this.markup.getCssAttr("list-style-format");
     var list_style = new ListStyle({
       type:list_style_type,
       position:list_style_pos,
-      image:list_style_image
+      image:list_style_image,
+      format:list_style_format
     });
     var marker_advance = list_style.getMarkerAdvance(parent.flow, parent.fontSize, item_count);
     box.listStyle = list_style;
     box.partition = new Partition([marker_advance, box.getContentMeasure() - marker_advance]);
   },
   _createStream : function(){
-    return new ListTagStream(this.markup.content);
+    return new ListTagStream(this.markup.getContent());
   }
 });
 
-var InsideListItemGenerator = ChildPageGenerator.extend({
+var InsideListItemGenerator = ChildBlockTreeGenerator.extend({
   init : function(markup, parent, context){
     var marker = parent.listStyle.getMarkerHtml(markup.order + 1);
     var marker_html = Html.tagWrap("span", marker, {
       "class":"nehan-li-marker"
     });
-    markup.content = marker_html + Const.space + markup.content;
+    markup.content = marker_html + Const.space + markup.getContent();
     this._super(markup, context);
   }
 });
 
-var OutsideListItemGenerator = ParallelPageGenerator.extend({
+var OutsideListItemGenerator = ParallelGenerator.extend({
   init : function(markup, parent, context){
-    markup.marker = parent.listStyle.getMarkerHtml(markup.order + 1);
+    var marker = parent.listStyle.getMarkerHtml(markup.order + 1);
+    var markup_marker = new Tag("<div class='nehan-li-marker'>", marker);
     this._super([
-      new ListItemMarkGenerator(markup, context),
+      new ListItemMarkGenerator(markup_marker, context),
       new ListItemBodyGenerator(markup, context)
     ], markup, context, parent.partition);
   }
 });
 
-var ListItemMarkGenerator = ParaChildPageGenerator.extend({
+var ListItemMarkGenerator = ParaChildGenerator.extend({
   _getBoxType : function(){
     return "li-marker";
-  },
-  _createStream : function(){
-    return new TokenStream(this.markup.marker);
   }
 });
 
-var ListItemBodyGenerator = ParaChildPageGenerator.extend({
+var ListItemBodyGenerator = ParaChildGenerator.extend({
   _getBoxType : function(){
     return "li-body";
   }
 });
 
-var DefListGenerator = ChildPageGenerator.extend({
+var DefListGenerator = ChildBlockTreeGenerator.extend({
   _createStream : function(){
-    return new DefListTagStream(this.markup.content);
+    return new DefListTagStream(this.markup.getContent());
   }
 });
 
@@ -8212,14 +8302,13 @@ var EvalResult = (function(){
 })();
 
 var PageEvaluator = (function(){
-  function PageEvaluator(ctx){
-    this.ctx = ctx || new DocumentContext();
-    this.blockEvaluator = new BlockEvaluator(this.ctx);
+  function PageEvaluator(){
+    this.blockEvaluator = new BlockEvaluator();
   }
 
   PageEvaluator.prototype = {
     evaluate : function(box){
-      var html = this.blockEvaluator.evaluate(box, this.ctx);
+      var html = this.blockEvaluator.evaluate(box);
       var css_content = box.styles.join("\n");
       var style = Html.tagWrap("style", css_content, {"type":"text/css"});
       return new EvalResult({
@@ -8244,89 +8333,79 @@ var BlockEvaluator = (function(){
   }
 
   BlockEvaluator.prototype = {
-    evaluate : function(box, ctx){
+    evaluate : function(box){
       switch(box._type){
       case "br":
-	return this.evalBreak(box, ctx);
+	return this.evalBreak(box);
       case "hr":
-	return this.evalHorizontalRule(box, ctx);
+	return this.evalHorizontalRule(box);
       case "ibox":
-	return this.evalInlineBox(box, ctx);
+	return this.evalInlineBox(box);
       case "ipage":
-	return this.evalInlinePage(box, ctx);
+	return this.evalInlinePage(box);
       case "img":
-	return this.evalImage(box, ctx);
+	return this.evalImage(box);
       case "table":
-	return this.evalTable(box, ctx);
-      case "line-box":
-	return this.evalLineBox(box, ctx);
-      case "text-line": case "ruby-line":
-	return this.evalLine(box, ctx);
+	return this.evalTable(box);
+      case "text-line":
+	return this.evalTextLine(box);
       default:
-	return this.evalBox(box, ctx);
+	return this.evalBox(box);
       }
     },
-    evalBox : function(box, ctx){
+    evalBox : function(box){
       var attr = {
-	"style":Css.attr(box.getCss()),
+	"style":Css.toString(box.getCssBlock()),
 	"class":box.getCssClasses()
       };
       if(box.id){
 	attr.id = box.id;
       }
-      return Html.tagWrap("div", this.evalBoxChilds(box.getChilds(), ctx), attr);
+      return Html.tagWrap("div", this.evalBoxChilds(box.getChilds()), attr);
     },
-    evalBoxChilds : function(childs, ctx){
+    evalBoxChilds : function(childs){
       var self = this;
       return List.fold(childs, "", function(ret, box){
-	return [ret, self.evaluate(box, ctx)].join("\n");
+	return [ret, self.evaluate(box)].join("\n");
       });
     },
-    evalLineBox : function(box, ctx){
-      var self = this;
-      return List.fold(box.getLines(), "", function(ret, line){
-	return ret + self.evalLine(line, ctx);
-      });
-    },
-    evalLine : function(box, ctx){
+    evalTextLine : function(box){
       if(box.isTextVertical()){
-	return this.inlineEvaluatorV.evaluate(box, ctx);
+	return this.inlineEvaluatorV.evaluate(box);
       }
-      return this.inlineEvaluatorH.evaluate(box, ctx);
+      return this.inlineEvaluatorH.evaluate(box);
     },
-    evalInlineBox : function(box, ctx){
+    evalInlineBox : function(box){
       return Html.tagWrap("div", box.content, {
-	"style":Css.attr(box.getCss()),
+	"style":Css.toString(box.getCssBlock()),
 	"class":box.getCssClasses()
       });
     },
-    evalHorizontalRule : function(box, ctx){
-      return this.evalInlineBox(box, ctx);
+    evalHorizontalRule : function(box){
+      return this.evalInlineBox(box);
     },
-    evalBreak : function(box, ctx){
-      return this.evalInlineBox(box, ctx);
+    evalBreak : function(box){
+      return this.evalInlineBox(box);
     },
-    evalImage : function(box, ctx){
-      var content = this.evalImageContent(box, ctx);
+    evalImage : function(box){
+      var content = this.evalImageContent(box);
       return Html.tagWrap("div", content, {
-	"style":Css.attr(box.getCss()),
+	"style":Css.toString(box.getCssBlock()),
 	"class":box.getCssClasses()
       });
     },
-    evalImageContent : function(box, ctx){
+    evalImageContent : function(box){
       return Html.tagSingle("img", {
 	"src": box.src,
 	"width": box.getContentWidth(),
 	"height": box.getContentHeight()
       });
     },
-    evalInlinePage : function(box, ctx){
-      var ctx2 = ctx.createInlineRoot();
-      return this.evalBox(box, ctx2);
+    evalInlinePage : function(box){
+      return this.evalBox(box);
     },
-    evalTable : function(box, ctx){
-      var ctx2 = ctx.createInlineRoot();
-      return this.evalBox(box, ctx2);
+    evalTable : function(box){
+      return this.evalBox(box);
     }
   };
 
@@ -8338,394 +8417,248 @@ var InlineEvaluator = Class.extend({
   init : function(parent_evaluator){
     this.parentEvaluator = parent_evaluator;
   },
-  evaluate : function(line, ctx){
-    switch(line._type){
-    case "text-line":
-      return this.evalTextLine(line, ctx);
-    case "ruby-line":
-      return this.evalRubyLine(line, ctx);
-    }
+  evaluate : function(line){
+    throw "InlineEvaluator::evaluate not implemented";
   },
-  evalTextLine : function(line, ctx){
-    return Html.tagWrap("div", this.evalTextLineBody(line, ctx), {
-      "style":Css.attr(line.getCss()),
-      "class":line.getCssClasses()
-    });
-  },
-  evalTextLineBody : function(line, ctx){
+  evalTextLineBody : function(line, tokens){
     var self = this;
-    return [
-      this.evalOpenTagStack(line, ctx),
-      List.fold(line.tokens, "", function(ret, element){
-	return ret + self.evalInlineElement(line, element, ctx);
-      }),
-      this.evalCloseTagStack(line, ctx)
-    ].join("");
-  },
-  evalRubyLine : function(line, ctx){
-    var ruby_line_body = this.evalRubyLineBody(line, ctx);
-    var empha_chars = this.evalEmphaChars(line, ctx);
-    return Html.tagWrap("div", ruby_line_body + empha_chars, {
-      "style":Css.attr(line.getCss()),
-      "class":line.getCssClasses()
+    var body = List.fold(tokens, "", function(ret, element){
+      return ret + self.evalInlineElement(line, element);
     });
-  },
-  evalEmphaChars : function(line, ctx){
-    var self = this;
-    return List.fold(line.emphaChars, "", function(ret, text){
-      return ret + self.evalEmphaChar(line, text, ctx);
-    });
-  },
-  evalRubyLineBody : function(line, ctx){
-    var self = this;
-    return List.fold(line.tokens, "", function(ret, label){
-      return ret + self.evalRubyLabel(line, label, ctx);
-    });
-  },
-  evalRubyLabel : function(line, label, ctx){
-    throw "not implemented:evalRubyLabel";
-  },
-  evalEmphaChar : function(line, text, ctx){
-    throw "not implemented:evalEmphaChar";
-  },
-  evalOpenTagStack : function(line, ctx){
-    var self = this;
-    var stack = ctx.getInlineTagStack();
-    return List.fold(stack.tags, "", function(ret, tag){
-      return ret + self.evalTagOpen(line, tag, ctx, false);
-    });
-  },
-  evalCloseTagStack : function(line, ctx){
-    var self = this;
-    var stack = ctx.getInlineTagStack();
-    return List.fold(stack.tags, "", function(ret, tag){
-      return ret + self.evalTagClose(line, tag.getCloseTag(), ctx, false);
-    });
-  },
-  evalInlineElement : function(line, element, ctx){
-    if(Token.isText(element)){
-      return this.evalText(line, element, ctx);
+    if(line.isLinkLine()){
+      return this.evalLinkLine(line, body);
     }
-    if(Token.isTag(element)){
-      return this.evalTag(line, element, ctx);
-    }
-    if(element instanceof Box){
-      return this.evalInlineBox(element, ctx);
-    }
-    return "";
+    return body;
   },
-  evalText : function(line, text, ctx){
-    switch(text._type){
-    case "word":
-      return this.evalWord(line, text, ctx);
-    case "tcy":
-      return this.evalTcy(line, text, ctx);
-    case "char":
-      return this.evalChar(line, text, ctx);
-    default:
-      return "";
-    }
-  },
-  evalTag : function(line, tag, ctx){
-    if(tag.isSingleTag()){
-      return this.evalTagSingle(line, tag, ctx);
-    }
-    if(tag.isOpen()){
-      return this.evalTagOpen(line, tag, ctx, true);
-    }
-    return this.evalTagClose(line, tag, ctx, true);
-  },
-  evalTagOpen : function(line, tag, ctx, update){
-    if(update){
-      ctx.pushInlineTag(tag, line);
-    }
-    return this.evalTagOpenBody(line, tag, ctx);
-  },
-  evalTagCss : function(line, tag, ctx){
-    var css = {};
-    if(tag.fontSize){
-      css["font-size"] = tag.fontSize + "px";
-      css["line-height"] = "1em";
-    }
-    if(tag.fontColor){
-      Args.copy(css, tag.fontColor.getCss());
-    }
-    if(tag.edge){
-      Args.copy(css, tag.edge.getCss());
-    }
-    return css;
-  },
-  evalTagStart : function(line, tag, ctx, alias){
-    var attr = {};
-    var css = this.evalTagCss(line, tag, ctx);
-    var tag_name = tag.getName();
-    tag.addClass(Css.addNehanPrefix(tag_name));
-    attr["class"] = tag.getCssClasses();
-    if(!Obj.isEmpty(css)){
-      attr.style = Css.attr(css);
-    }
-    return Html.tagStart(alias || tag_name, attr);
-  },
-  evalTagEnd : function(line, tag, ctx){
-    throw "not implemented:evalTagEnd";
-  },
-  evalTagOpenBody : function(line, tag, ctx){
-    switch(tag.getName()){
-    case "a":
-      return this.evalLinkStart(line, tag, ctx);
-    default:
-      return this.evalTagStart(line, tag, ctx);
-    }
-  },
-  evalTagClose : function(line, tag, ctx, update){
-    var open_name = tag.getOpenTagName();
-    var open_tag = update? ctx.popInlineTagByName(open_name) : ctx.findLastInlineTagByName(open_name);
-    if(open_tag === null){
-      return "";
-    }
-    return this.evalTagCloseBody(line, tag, ctx);
-  },
-  evalTagCloseBody : function(line, tag, ctx){
-    switch(tag.getName()){
-    case "/a":
-      return "</a>";
-    default:
-      return this.evalTagEnd(tag, ctx);
-    }
-  },
-  evalTagSingle : function(line, tag, ctx){
-    return tag.getSrc();
-  },
-  evalInlineBox : function(box, ctx){
-    return this.parentEvaluator.evaluate(box, ctx);
-  },
-  evalLinkStart : function(line, tag, ctx){
-    var attr = {};
-    attr.href = tag.getTagAttr("href", "#");
-    var name = tag.getTagAttr("name");
+  evalLinkLine : function(line, body){
+    var attr = {}, markup = line.markup;
+    attr.href = markup.getTagAttr("href", "#");
+    var name = markup.getTagAttr("name");
     if(name){
-      tag.addClass("nehan-anchor");
+      markup.addClass("nehan-anchor");
       attr.name = name;
     }
-    var target = tag.getTagAttr("target");
+    var target = markup.getTagAttr("target");
     if(target){
       attr.target = target;
     }
     if(attr.href.indexOf("#") >= 0){
-      tag.addClass("nehan-anchor-link");
+      markup.addClass("nehan-anchor-link");
     }
-    attr["class"] = tag.getCssClasses();
-    return Html.tagStart(tag.getName(), attr);
+    attr["class"] = markup.getCssClasses();
+    return Html.tagWrap("a", body, attr);
   },
-  evalWord : function(line, word, ctx){
+  evalInlineElement : function(line, element){
+    if(element._type === "text-line"){
+      return this.evaluate(element);
+    }
+    if(element instanceof Ruby){
+      return this.evalRuby(line, element);
+    }
+    if(Token.isText(element)){
+      return this.evalText(line, element);
+    }
+    if(element instanceof Box){
+      return this.evalInlineBox(line, element);
+    }
+    return "";
+  },
+  evalText : function(line, text){
+    switch(text._type){
+    case "word":
+      return this.evalWord(line, text);
+    case "tcy":
+      var tcy = this.evalTcy(line, text);
+      return line.textEmpha? this.evalEmpha(line, text, tcy) : tcy;
+    case "char":
+      var chr = this.evalChar(line, text);
+      return line.textEmpha? this.evalEmpha(line, text, chr) : chr;
+    default:
+      return "";
+    }
+  },
+  evalInlineBox : function(line, box){
+    throw "not implemented: evalInlineBox";
+  },
+  evalWord : function(line, word){
     throw "not implemented: evalWord";
   },
-  evalTcy : function(line, tcy, ctx){
+  evalTcy : function(line, tcy){
     throw "not implemented: evalTcy";
   },
-  evalChar : function(line, tcy, ctx){
+  evalChar : function(line, tcy){
     throw "not implemented: evalChar";
   }
 });
 
 var VerticalInlineEvaluator = InlineEvaluator.extend({
-  evalTextLine : function(line, ctx){
-    var css = line.getCss();
-    if(line.parent && line.parent._type === "ruby-line"){
-      css["float"] = "none";
-    }
-    return Html.tagWrap("div", this.evalTextLineBody(line, ctx), {
-      "style":Css.attr(css),
+  evaluate : function(line){
+    return Html.tagWrap("div", this.evalTextLineBody(line, line.getChilds()), {
+      "style":Css.toString(line.getCssInline()),
       "class":line.getCssClasses()
     });
   },
-  evalRubyLabel : function(line, label, ctx){
-    var label_line = this._yieldRubyLabelLine(line, label, ctx);
-    return Html.tagWrap("div", this.evalTextLine(label_line, ctx.createInlineRoot()), {
-      "style": Css.attr(label.getCss(line)),
-      "class": Css.addNehanPrefix(label._type)
+  evalRuby : function(line, ruby){
+    var body = this.evalRb(line, ruby) + this.evalRt(line, ruby);
+    return Html.tagWrap("div", body, {
+      "style":Css.toString(ruby.getCssVertRuby(line)),
+      "class":"nehan-ruby-body"
     });
   },
-  evalEmphaChar : function(line, text, ctx){
-    return Html.tagWrap("div", text.data, {
-      "class": "nehan-empha-char",
-      "style": Css.attr(text.getCss(line.flow))
+  evalRb : function(line, ruby){
+    var body = this.evalTextLineBody(line, ruby.getRbs());
+    return Html.tagWrap("div", body, {
+      "style":Css.toString(ruby.getCssVertRb(line)),
+      "class":"nehan-rb"
     });
   },
-  _yieldRubyLabelLine : function(line, label, ctx){
-    var text = label.getRtString();
-    var font_size = label.getRtFontSize();
-    var stream = new TokenStream(text);
-    var ctx2 = ctx.createInlineRoot();
-    ctx2.setFixedFontSize(font_size);
-    var generator = new InlineGenerator(null, stream, ctx2);
-    return generator.yield(line);
+  evalRt : function(line, ruby){
+    var generator = new RtGenerator(ruby.rt, new DocumentContext());
+    var rt_line = generator.yield(line);
+    var css = ruby.getCssVertRt(line);
+    for(var prop in css){
+      rt_line.setCss(prop, css[prop]);
+    }
+    return this.evaluate(rt_line);
   },
-  evalTagStart : function(line, tag, ctx){
-    return this._super(line, tag, ctx, "div");
-  },
-  evalTagEnd : function(line, tag, ctx){
-    return "</div>";
-  },
-  evalWord : function(line, word, ctx){
+  evalWord : function(line, word){
     if(Env.isTransformEnable){
-      return this.evalWordTransform(line, word, ctx);
+      return this.evalWordTransform(line, word);
     } else if(Env.isIE){
-      return this.evalWordIE(line, word, ctx);
+      return this.evalWordIE(line, word);
     } else {
       return "";
     }
   },
-  evalWordTransform : function(line, word, ctx){
+  evalWordTransform : function(line, word){
     var body = Html.tagWrap("div", word.data, {
       "class": "nehan-vert-alpha"
     });
     return Html.tagWrap("div", body, {
-      "style": Css.attr({
-	"letter-spacing":line.letterSpacing + "px",
-	"width": word.fontSize + "px",
-	"height": word.bodySize + "px",
-	"word-break":"keep-all",
-	"overflow": "visible"
-      })
+      "style": Css.toString(word.getCssVertTrans(line))
     });
   },
-  evalWordIE : function(line, word, ctx){
-    var css = {
-      "writing-mode": "tb-rl",
-      "letter-spacing":line.letterSpacing + "px",
-      "line-height": word.fontSize + "px",
-      "float": "left"
-    };
+  evalWordIE : function(line, word){
     return Html.tagWrap("div", word.data, {
-      "style": Css.attr(css)
+      "class": "nehan-vert-alpha-ie",
+      "style": Css.toString(word.getCssVertTransIE(line))
     });
   },
-  evalTcy : function(line, tcy, ctx){
+  evalTcy : function(line, tcy){
     return Html.tagWrap("div", tcy.data, {
       "class": "nehan-tcy"
     });
   },
-  evalChar : function(line, chr, ctx){
+  evalChar : function(line, chr){
     if(chr.isImgChar()){
-      if(Config.useVerticalGlyphIfEnable &&
-	 Env.isVerticalGlyphEnable &&
-	 !chr.isTenten()){
-	return this.evalVerticalGlyph(line, chr, ctx);
-      } else {
-	return this.evalImgChar(line, chr, ctx);
+      if(chr.isVertGlyphEnable()){
+	return this.evalVerticalGlyph(line, chr);
       }
-    } else if(chr.isHalfSpaceChar(chr, ctx)){
-      return this.evalHalfSpaceChar(line, chr, ctx);
+      return this.evalImgChar(line, chr);
+    } else if(chr.isHalfSpaceChar(chr)){
+      return this.evalHalfSpaceChar(line, chr);
     } else if(chr.isCnvChar()){
-      return this.evalCnvChar(line, chr, ctx);
+      return this.evalCnvChar(line, chr);
     } else if(chr.isSmallKana()){
-      return this.evalSmallKana(line, chr, ctx);
+      return this.evalSmallKana(line, chr);
     } else if(chr.isPaddingEnable()){
-      return this.evalPaddingChar(line, chr, ctx);
-    }
-    return this.evalCharBr(line, chr, ctx);
-  },
-  evalCharBr : function(line, chr, ctx){
-    if(line.letterSpacing){
-      return Html.tagWrap("div", chr.data, {
-	"style":Css.attr({
-	  "margin-bottom":line.letterSpacing + "px"
-	})
-      });
+      return this.evalPaddingChar(line, chr);
+    } else if(line.letterSpacing){
+      return this.evalCharLetterSpacing(line, chr);
     }
     return chr.data + "<br />";
   },
-  evalPaddingChar : function(line, chr, ctx){
+  evalCharLetterSpacing : function(line, chr){
     return Html.tagWrap("div", chr.data, {
-      style:Css.attr(chr.getCssPadding(line.flow))
+      "style":Css.toString(chr.getCssVertLetterSpacing(line))
     });
   },
-  evalImgChar : function(line, chr, ctx){
-    var width = chr.fontSize;
-    var vscale = chr.getVertScale();
-    var height = (vscale === 1)? width : Math.floor(width * vscale);
-    var css = {};
-    if(chr.isPaddingEnable()){
-      Args.copy(css, chr.getCssPadding(line.flow));
-    }
-    var palette_color_value = Layout.fontColor.toUpperCase();
-    var font_color = ctx.getInlineFontColor(line);
-    if(font_color.getValue().toLowerCase() != Layout.fontColor.toLowerCase()){
-      palette_color_value = font_color.getPaletteValue().toUpperCase();
-    }
+  evalEmpha : function(line, chr, char_body){
+    char_body = char_body.replace("<br />", "");
+    var char_body2 = Html.tagWrap("span", char_body, {
+      "class":"nehan-empha-src",
+      "style":Css.toString(chr.getCssVertEmphaSrc(line))
+    });
+    var empha_body = Html.tagWrap("span", line.textEmpha.getText(), {
+      "class":"nehan-empha-text",
+      "style":Css.toString(chr.getCssVertEmphaText(line))
+    });
+    // TODO: check text-emphasis-position is over or under
+    return Html.tagWrap("div", char_body2 + empha_body, {
+      "class":"nehan-empha-wrap",
+      "style":Css.toString(line.textEmpha.getCssVertEmphaWrap(line, chr))
+    });
+  },
+  evalPaddingChar : function(line, chr){
+    return Html.tagWrap("div", chr.data, {
+      style:Css.toString(chr.getCssPadding(line))
+    });
+  },
+  evalImgChar : function(line, chr){
+    var font_rgb = line.color.getRgb();
+    var palette_color = Palette.getColor(font_rgb).toUpperCase();
     return Html.tagSingle("img", {
       "class":"nehan-img-char",
-      src:chr.getImgSrc(palette_color_value),
-      style:Css.attr(css),
-      width:width,
-      height:height
+      src:chr.getImgSrc(palette_color),
+      style:Css.toString(chr.getCssVertImgChar(line))
     }) + Const.clearFix;
   },
-  evalVerticalGlyph : function(line, chr, ctx){
-    var classes = ["nehan-vert-rl"];
-    if(chr.isKakkoStart()){
-      if(!chr.isPaddingEnable()){
-	classes.push("nehan-vert-kern-start");
-      }
-    } else {
-      if(chr.getVertScale() < 1){
-	classes.push("nehan-vert-half");
-      }
-      if(chr.isPaddingEnable()){
-	classes.push("nehan-vert-space-end");
-      }
-    }
+  evalVerticalGlyph : function(line, chr){
     return Html.tagWrap("div", chr.data, {
-      "class":classes.join(" ")
+      "class":"nehan-vert-rl",
+      "style":Css.toString(chr.getCssVertGlyph(line))
     });
   },
-  evalCnvChar: function(line, chr, ctx){
+  evalCnvChar: function(line, chr){
     return chr.cnv + "<br />";
   },
-  evalSmallKana : function(line, chr, ctx){
-    return Html.tagWrap("div", chr.data, {
-      style:Css.attr({
-	"position": "relative",
-	"top": "-0.1em",
-	"right":"-0.12em",
-	"height": chr.bodySize + "px",
-	"line-height": chr.bodySize + "px"
-      })
+  evalSmallKana : function(line, chr){
+    var tag_name = line.textEmpha? "span" : "div";
+    return Html.tagWrap(tag_name, chr.data, {
+      style:Css.toString(chr.getCssVertSmallKana())
     });
   },
-  evalHalfSpaceChar : function(line, chr, ctx){
-    var half = Math.floor(chr.fontSize / 2);
+  evalHalfSpaceChar : function(line, chr){
+    var half = Math.floor(line.fontSize / 2);
     return Html.tagWrap("div", "&nbsp;", {
-      style:Css.attr({
-	"height": half + "px",
-	"line-height": half + "px"
-      })
+      style:Css.toString(chr.getCssVertHalfSpaceChar(line))
     });
   },
-  evalInlineBox : function(box, ctx){
-    return this._super(box, ctx) + Const.clearFix;
+  evalInlineBox : function(line, box){
+    var body = (box._type === "img")? this.parentEvaluator.evalImageContent(box) : box.content;
+    return Html.tagWrap("div", body, {
+      "style":Css.toString(box.getCssVertInlineBox())
+    });
   }
 });
 
 var HorizontalInlineEvaluator = InlineEvaluator.extend({
-  evalRubyLabel : function(line, label, ctx){
-    return Html.tagWrap("span", label.getRtString(), {
-      "style": Css.attr(label.getCss(line)),
-      "class": Css.addNehanPrefix(label._type)
+  evaluate : function(line, ctx){
+    var tag_name = line.isInlineText()? "span" : "div";
+    return Html.tagWrap(tag_name, this.evalTextLineBody(line, line.getChilds(), ctx), {
+      "style":Css.toString(line.getCssInline()),
+      "class":line.getCssClasses()
     });
   },
-  evalEmphaChar : function(line, text, ctx){
-    return Html.tagWrap("span", text.data, {
-      "class": "nehan-empha-char",
-      "style": Css.attr(text.getCss(line.flow))
+  evalRuby : function(line, ruby, ctx){
+    var body = this.evalRt(line, ruby, ctx) + this.evalRb(line, ruby, ctx);
+    return Html.tagWrap("span", body, {
+      "style":Css.toString(ruby.getCssHoriRuby(line)),
+      "class":"nehan-ruby"
     });
   },
-  evalTagStart : function(line, tag, ctx, alias){
-    return this._super(line, tag, ctx, "span");
+  evalRb : function(line, ruby, ctx){
+    var body = this.evalTextLineBody(line, ruby.getRbs(), ctx);
+    return Html.tagWrap("div", body, {
+      "style":Css.toString(ruby.getCssHoriRb(line)),
+      "class":"nehan-rb"
+    });
   },
-  evalTagEnd : function(line, tag, ctx){
-    return "</span>";
+  evalRt : function(line, ruby, ctx){
+    return Html.tagWrap("div", ruby.getRtString(), {
+      "style":Css.toString(ruby.getCssHoriRt(line)),
+      "class":"nehan-rt"
+    });
   },
   evalWord : function(line, word, ctx){
     return word.data;
@@ -8741,23 +8674,35 @@ var HorizontalInlineEvaluator = InlineEvaluator.extend({
     }
     return chr.data;
   },
+  evalEmpha : function(line, chr, char_body){
+    var char_body2 = Html.tagWrap("div", char_body, {
+      "style":Css.toString(chr.getCssHoriEmphaSrc(line))
+    });
+    var empha_body = Html.tagWrap("div", line.textEmpha.getText(), {
+      "style":Css.toString(chr.getCssHoriEmphaText(line))
+    });
+    // TODO: check text-emphasis-position is over or under
+    return Html.tagWrap("span", empha_body + char_body2, {
+      "style":Css.toString(line.textEmpha.getCssHoriEmphaWrap(line, chr))
+    });
+  },
   evalKerningChar : function(line, chr, ctx){
-    var css = chr.getCssPadding(line.flow);
+    var css = chr.getCssPadding(line);
     if(chr.isKakkoStart()){
       return Html.tagWrap("span", chr.data, {
-	"style": Css.attr(css),
+	"style": Css.toString(css),
 	"class":"nehan-char-kakko-start"
       });
     }
     if(chr.isKakkoEnd()){
       return Html.tagWrap("span", chr.data, {
-	"style": Css.attr(css),
+	"style": Css.toString(css),
 	"class":"nehan-char-kakko-end"
       });
     }
     if(chr.isKutenTouten()){
       return Html.tagWrap("span", chr.data, {
-	"style": Css.attr(css),
+	"style": Css.toString(css),
 	"class":"nehan-char-kuto"
       });
     }
@@ -8765,8 +8710,12 @@ var HorizontalInlineEvaluator = InlineEvaluator.extend({
   },
   evalPaddingChar : function(line, chr, ctx){
     return Html.tagWrap("span", chr.data, {
-      "style": Css.attr(chr.getCssPadding(line.flow))
+      "style": Css.toString(chr.getCssPadding(line))
     });
+  },
+  evalInlineBox : function(line, box){
+    box.display = "inline-block";
+    return this.parentEvaluator.evaluate(box);
   }
 });
 
@@ -8949,7 +8898,7 @@ var PageStream = Class.extend({
       .replace(/<rt><\/rt>/gi, ""); // discard empty rt
   },
   _createGenerator : function(text){
-    return new BodyPageGenerator(text);
+    return new BodyBlockTreeGenerator(text);
   },
   _createEvaluator : function(){
     return new PageEvaluator();
@@ -9087,6 +9036,8 @@ if(__engine_args.test){
   __exports.BoxEdge = BoxEdge;
   __exports.BoxSize = BoxSize;
   __exports.LogicalSize = LogicalSize;
+  __exports.BoxSizing = BoxSizing;
+  __exports.BoxSizings = BoxSizings;
   __exports.UnitSize = UnitSize;
   __exports.BoxChild = BoxChild;
   __exports.Box = Box;
@@ -9126,15 +9077,15 @@ if(__engine_args.test){
   __exports.ListTagStream = ListTagStream;
   __exports.DefListTagStream = DefListTagStream;
   __exports.TableTagStream = TableTagStream;
-  __exports.RubyStream = RubyStream;
+  __exports.RubyTagStream = RubyTagStream;
 
   // generator
-  __exports.BlockGenerator = BlockGenerator;
-  __exports.InlineGenerator = InlineGenerator;
-  __exports.PageGenerator = PageGenerator;
-  __exports.BodyPageGenerator = BodyPageGenerator;
-  __exports.ParallelPageGenerator = ParallelPageGenerator;
-  __exports.ParaChildPageGenerator = ParaChildPageGenerator;
+  __exports.ElementGenerator = ElementGenerator;
+  __exports.InlineTreeGenerator = InlineTreeGenerator;
+  __exports.BlockTreeGenerator = BlockTreeGenerator;
+  __exports.BodyBlockTreeGenerator = BodyBlockTreeGenerator;
+  __exports.ParallelGenerator = ParallelGenerator;
+  __exports.ParaChildGenerator = ParaChildGenerator;
   __exports.HtmlGenerator = HtmlGenerator;
   __exports.DocumentGenerator = DocumentGenerator;
 
