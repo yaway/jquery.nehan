@@ -1210,6 +1210,10 @@ var List = {
       ret[i] = [lst1[i], lst2[i]];
     }
     return ret;
+  },
+  reverse : function(lst){
+    lst.reverse();
+    return lst;
   }
 };
 
@@ -1693,21 +1697,11 @@ var Tag = (function (){
     this.name = this._parseName(this.src);
     this.parent = null;
     this.contentRaw = content || "";
-
-    // <img width='xx' height='yy'>
-    // => tagAttr = {width:'xx', height:'yy'}
-    this.tagAttr = {};
-
-    // <img data-key='xxx'>
-    // -> dataset = {key:'xxx'}
     this.dataset = {};
-
-    // updated when 'inherit' is called.
+    this.tagAttr = {};
     this.cssAttrContext = {};
-
-    // updated by 'setCssAttr'.
-    // notice that this must be defined before this._parseTagAttr.
-    this.cssAttrDynamic = {};
+    this.cssAttrDynamic = {}; // updated by 'setCssAttr'.
+    this.childs = []; // updated by inherit
 
     this.tagAttr = this._parseTagAttr(this.src);
     this.id = this._parseId();
@@ -1749,6 +1743,7 @@ var Tag = (function (){
       }
       var self = this;
       this.parent = parent_tag;
+      this.parent.addChild(this);
       if(parent_tag.getName() != "body"){
 	var prev_selector_size = this.selectors.length;
 	var parent_selectors = parent_tag.getSelectors();
@@ -1792,6 +1787,9 @@ var Tag = (function (){
 	this.setCssAttrs(cache);
       }
     },
+    addChild : function(tag){
+      this.childs.push(tag);
+    },
     addClass : function(klass){
       this.classes.push(klass);
     },
@@ -1822,6 +1820,24 @@ var Tag = (function (){
     },
     getAttr : function(name, def_value){
       return this.getTagAttr(name) || this.getCssAttr(name) || ((typeof def_value !== "undefined")? def_value : null);
+    },
+    getParent : function(){
+      return this.parent || null;
+    },
+    getChilds : function(){
+      return this.childs;
+    },
+    getParentChilds : function(){
+      return this.parent? this.parent.getChilds() : [];
+    },
+    getParentTypeChilds : function(){
+      var name = this.getName();
+      return List.filter(this.getParentChilds(), function(tag){
+	return tag.getName() === name;
+      });
+    },
+    getOrder : function(){
+      return this.order || -1;
     },
     getPseudoClassCssAttr : function(class_name){
       var selectors = this._parsePseudoClassSelectors(class_name);
@@ -1957,12 +1973,6 @@ var Tag = (function (){
     hasClass : function(klass){
       return List.exists(this.classes, Closure.eq(klass));
     },
-    isSameAs : function(name){
-      if(this.alias){
-	return this.alias == name;
-      }
-      return this.name == name;
-    },
     isPseudoElement : function(){
       return this.name === "before" || this.name === "after" || this.name === "first-letter" || this.name === "first-line";
     },
@@ -2044,6 +2054,45 @@ var Tag = (function (){
     isPageBreakTag : function(){
       var name = this.getName();
       return name === "end-page" || name === "page-break";
+    },
+    _getChildIndexFrom : function(childs){
+      var self = this;
+      return List.indexOf(childs, function(tag){
+	return Token.isSame(self, tag);
+      });
+    },
+    getChildNth : function(){
+      return this._getChildIndexFrom(this.getParentChilds());
+    },
+    getLastChildNth : function(){
+      return this._getChildIndexFrom(List.reverse(this.getParentChilds()));
+    },
+    getChildOfTypeNth : function(){
+      return this._getChildIndexFrom(this.getParentTypeChilds());
+    },
+    getLastChildOfTypeNth : function(){
+      return this._getChildIndexFrom(this.getParentTypeChilds());
+    },
+    isFirstChild : function(){
+      return this.getChildNth() === 0;
+    },
+    isLastChild : function(){
+      var childs = this.getParentChilds();
+      return this.getChildNth() === (childs.length - 1);
+    },
+    isFirstOfType : function(){
+      return this.getChildOfTypeNth() === 0;
+    },
+    isLastOfType : function(){
+      var childs = this.getParentTypeChilds();
+      return this.getChildOfTypeNth() === (childs.length - 1);
+    },
+    isOnlyChild : function(){
+      return this.getParentChilds().length === 1;
+    },
+    isOnlyOfType : function(){
+      var childs = this.getParentTypeChilds();
+      return (childs.length === 1 && Token.isSame(childs[0], this));
     },
     _getCssCacheKey : function(selectors){
       return selectors.join("*");
@@ -2194,6 +2243,9 @@ var Tag = (function (){
 
 
 var Token = {
+  isSame : function(token1, token2){
+    return token1._gtid === token2._gtid;
+  },
   isTag : function(token){
     return token._type === "tag";
   },
@@ -5025,6 +5077,7 @@ var Lexer = (function (){
   var rexWord = /^([\w!\.\?\/\_:#;"',]+)/;
   var rexTag = /^(<[^>]+>)/;
   var rexCharRef = /^(&[^;\s]+;)/;
+  var global_token_id = 0;
 
   function Lexer(src){
     this.pos = 0;
@@ -5046,6 +5099,7 @@ var Lexer = (function (){
       var token = this._getToken();
       if(token){
 	token.spos = this.pos;
+	token._gtid = global_token_id++;
       }
       return token;
     },
@@ -5864,6 +5918,10 @@ var DocumentContext = (function(){
       var parent_tag = this.getCurBlockTag();
       if(parent_tag){
 	tag.inherit(parent_tag);
+	var onload = tag.getCssAttr("onload");
+	if(onload){
+	  onload(this, tag);
+	}
       }
     },
     isEmptyMarkupContext : function(){
@@ -6373,7 +6431,8 @@ var PhrasingTokenStream = TokenStream.extend({
 var DocumentTagStream = FilteredTagStream.extend({
   init : function(src){
     this._super(src, function(tag){
-      return (tag.isSameAs("!doctype") || tag.isSameAs("html"));
+      var name = tag.getName();
+      return (name === "!doctype" || name === "html");
     });
   }
 });
@@ -6382,7 +6441,8 @@ var DocumentTagStream = FilteredTagStream.extend({
 var HtmlTagStream = FilteredTagStream.extend({
   init : function(src){
     this._super(src, function(tag){
-      return (tag.isSameAs("head") || tag.isSameAs("body"));
+      var name = tag.getName();
+      return (name === "head" || name === "body");
     });
   }
 });
@@ -6391,11 +6451,12 @@ var HtmlTagStream = FilteredTagStream.extend({
 var HeadTagStream = FilteredTagStream.extend({
   init : function(src){
     this._super(src, function(tag){
-      return (tag.isSameAs("title") ||
-	      tag.isSameAs("meta") ||
-	      tag.isSameAs("link") ||
-	      tag.isSameAs("style") ||
-	      tag.isSameAs("script"));
+      var name = tag.getName();
+      return (name === "title" ||
+	      name === "meta" ||
+	      name === "link" ||
+	      name === "style" ||
+	      name === "script");
     });
   }
 });
@@ -6405,10 +6466,11 @@ var TableTagStream = FilteredTagStream.extend({
   init : function(markup){
     // TODO: caption not supported yet.
     this._super(markup.getContent(), function(tag){
-      return (tag.isSameAs("thead") ||
-	      tag.isSameAs("tbody") ||
-	      tag.isSameAs("tfoot") ||
-	      tag.isSameAs("tr"));
+      var name = tag.getName();
+      return (name === "thead" ||
+	      name === "tbody" ||
+	      name === "tfoot" ||
+	      name === "tr");
     });
     this.markup = markup;
     this.markup.tableChilds = this.tokens = this._parseTokens(this.tokens);
@@ -6517,7 +6579,7 @@ var TableTagStream = FilteredTagStream.extend({
   _parseRows : function(ctx, content){
     var self = this;
     var rows = (new FilteredTagStream(content, function(tag){
-      return tag.isSameAs("tr");
+      return tag.getName() === "tr";
     })).getAll();
 
     return List.map(rows, function(row){
@@ -6529,7 +6591,8 @@ var TableTagStream = FilteredTagStream.extend({
   },
   _parseCols : function(ctx, content){
     var cols = (new FilteredTagStream(content, function(tag){
-      return tag.isSameAs("td") || tag.isSameAs("th");
+      var name = tag.getName();
+      return (name === "td" || name === "th");
     })).getAll();
 
     List.iteri(cols, function(i, col){
@@ -6549,7 +6612,7 @@ var TableTagStream = FilteredTagStream.extend({
 var ListTagStream = FilteredTagStream.extend({
   init : function(src){
     this._super(src, function(tag){
-      return tag.isSameAs("li");
+      return tag.getName() === "li";
     });
   }
 });
@@ -6558,7 +6621,8 @@ var ListTagStream = FilteredTagStream.extend({
 var DefListTagStream = FilteredTagStream.extend({
   init : function(src, font_size, max_size){
     this._super(src, function(tag){
-      return tag.isSameAs("dt") || tag.isSameAs("dd");
+      var name = tag.getName();
+      return (name === "dt" || name === "dd");
     });
   }
 });
