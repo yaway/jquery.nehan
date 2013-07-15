@@ -923,7 +923,7 @@ var Reader = (function(){
     },
     _createStream : function(src){
       var group_count = this.status.getCellCount();
-      return this.engine.createPageGroupStream(src, group_count);
+      return this.engine.createPageStream(src, group_count);
     },
     _createTemplate : function(){
       var name = this.status.getTemplateName();
