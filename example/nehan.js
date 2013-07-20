@@ -493,6 +493,12 @@ var Style = {
       "after":"0.6em"
     }
   },
+  "li-mark":{
+    "display":"block"
+  },
+  "li-body":{
+    "display":"block"
+  },
   "link":{
     "meta":true,
     "single":true
@@ -658,12 +664,10 @@ var Style = {
     }
   },
   "tbody":{
-    "display":"block",
-    "border-collapse":"inherit"
+    "display":"block"
   },
   "td":{
     "display":"block",
-    "border-collapse":"inherit",
     "section-root":true,
     "border-width":"1px",
     "padding":{
@@ -679,13 +683,11 @@ var Style = {
     "interactive":true
   },
   "tfoot":{
-    "display":"block",
-    "border-collapse":"inherit"
+    "display":"block"
   },
   "th":{
     "display":"block",
     "line-rate":1.4,
-    "border-collapse":"inherit",
     "border-width":"1px",
     "padding":{
       "start":"0.8em",
@@ -695,8 +697,7 @@ var Style = {
     }
   },
   "thead":{
-    "display":"block",
-    "border-collapse":"inherit"
+    "display":"block"
   },
   "time":{
     "display":"inline"
@@ -828,9 +829,6 @@ var Style = {
   },
   ".nehan-flow-flip":{
     "flow":"flip"
-  },
-  ".nehan-flow-inherit":{
-    "float":"inherit"
   },
   //-------------------------------------------------------
   // list-style-position classes
@@ -1294,6 +1292,9 @@ var Utils = {
   trim : function(str){
     return str.replace(/^\s+/, "").replace(/\s+$/, "");
   },
+  cutQuote : function(str){
+    return str.replace(/['\"]/g, "");
+  },
   capitalize : function(str){
     if(str === ""){
       return "";
@@ -1743,11 +1744,372 @@ var CssParser = (function(){
 })();
 
 
+var SelectorAttr = (function(){
+  function SelectorAttr(expr){
+    this.expr = this._normalize(expr);
+    this.left = this.op = this.right = null;
+    this._parseExpr(this.expr);
+  }
+
+  var rex_symbol = /[^=^~|$*\s]+/;
+  var op_symbols = ["|=", "~=", "^=", "$=", "*=", "="];
+
+  SelectorAttr.prototype = {
+    _normalize : function(expr){
+      return expr.replace(/\[/g, "").replace(/\]/g, "");
+    },
+    _parseSymbol : function(expr){
+      var match = expr.match(rex_symbol);
+      if(match){
+	return match[0];
+      }
+      return "";
+    },
+    _parseOp : function(expr){
+      return List.find(op_symbols, function(symbol){
+	return expr.indexOf(symbol) >= 0;
+      });
+    },
+    _parseExpr : function(expr){
+      this.left = this._parseSymbol(expr);
+      if(this.left){
+	expr = Utils.trim(expr.slice(this.left.length));
+      }
+      this.op = this._parseOp(expr);
+      if(this.op){
+	expr = Utils.trim(expr.slice(this.op.length));
+	this.right = Utils.cutQuote(Utils.trim(expr));
+      }
+    },
+    _testHasAttr : function(markup){
+      return markup.getTagAttr(this.left) !== null;
+    },
+    _testEqual : function(markup){
+      var value = markup.getTagAttr(this.left);
+      return value === this.right;
+    },
+    _testCaretEqual : function(markup){
+      var value = markup.getTagAttr(this.left);
+      var rex = new RegExp("^" + this.right);
+      return rex.test(value);
+    },
+    _testDollarEqual : function(markup){
+      var value = markup.getTagAttr(this.left);
+      var rex = new RegExp(this.right + "$");
+      return rex.test(value);
+    },
+    _testTildeEqual : function(markup){
+      var values = markup.getTagAttr(this.left).split(/\s+/);
+      return List.exists(values, Closure.eq(this.right));
+    },
+    _testPipeEqual : function(markup){
+      var value = markup.getTagAttr(this.left);
+      return value == this.right || value.indexOf(this.right + "-") >= 0;
+    },
+    _testStarEqual : function(markup){
+      var value = markup.getTagAttr(this.left);
+      return value.indexOf(this.right) >= 0;
+    },
+    _testOp : function(markup){
+      switch(this.op){
+      case "=":  return this._testEqual(markup);
+      case "^=": return this._testCaretEqual(markup);
+      case "$=": return this._testDollarEqual(markup);
+      case "|=": return this._testPipeEqual(markup);
+      case "~=": return this._testTildeEqual(markup);
+      case "*=": return this._testStarEqual(markup);
+      }
+      throw "undefined operation:" + this.op;
+    },
+    test : function(markup){
+      if(this.op && this.left && this.right){
+	return this._testOp(markup);
+      }
+      if(this.left){
+	return this._testHasAttr(markup);
+      }
+      return false;
+    }
+  };
+
+  return SelectorAttr;
+})();
+
+
+var SelectorPseudo = (function(){
+  function SelectorPseudo(expr){
+    this.name = this._normalize(expr);
+  }
+
+  SelectorPseudo.prototype = {
+    _normalize : function(expr){
+      return expr.replace(/:+/g, "");
+    },
+    isPseudoElement : function(){
+      return (this.name === "before" ||
+	      this.name === "after" ||
+	      this.name === "first-letter" ||
+	      this.name === "first-line");
+    },
+    test : function(markup){
+      switch(this.name){
+      // pseudo-element
+      case "before": return true;
+      case "after": return true;
+      case "first-letter": return !markup.isEmpty();
+      case "first-line": return !markup.isEmpty();
+
+      // pseudo-class
+      case "first-child": return markup.isFirstChild();
+      case "last-child": return markup.isLastChild();
+      case "first-of-type": return markup.isFirstOfType();
+      case "last-of-type": return markup.isLastOfType();
+      case "only-child": return markup.isOnlyChild();
+      case "only-of-type": return markup.isOnlyOfType();
+      case "empty": return markup.isEmpty();
+      case "root": return markup.isRoot();
+      }
+      return false;
+    }
+  };
+
+  return SelectorPseudo;
+})();
+
+
+var SelectorType = (function(){
+  function SelectorType(opt){
+    this.name = opt.name;
+    this.id = opt.id;
+    this.className = opt.className;
+    this.attr = opt.attr;
+    this.pseudo = opt.pseudo;
+  }
+  
+  SelectorType.prototype = {
+    // see: http://www.w3.org/TR/css3-selectors/#specificity
+    _countSpecificity : function(){
+    },
+    test : function(markup){
+      if(markup === null){
+	return false;
+      }
+      if(this.name && this.name != "*" && markup.getName() != this.name){
+	return false;
+      }
+      if(this.className && !markup.hasClass(this.className)){
+	return false;
+      }
+      if(this.id && markup.getTagAttr("id") != this.id){
+	return false;
+      }
+      if(this.attr && !this.attr.test(markup)){
+	return false;
+      }
+      if(this.pseudo && !this.pseudo.test(markup)){
+	return false;
+      }
+      return true;
+    }
+  };
+
+  return SelectorType;
+})();
+
+
+var SelectorCombinator = {
+  findDescendant : function(markup, parent_type){
+    markup = markup.getParent();
+    while(markup !== null){
+      if(parent_type.test(markup)){
+	return markup;
+      }
+      markup = markup.getParent();
+    }
+    return null;
+  },
+  findChild : function(markup, parent_type){
+    markup = markup.getParent();
+    if(markup === null){
+      return null;
+    }
+    return parent_type.test(markup)? markup : null;
+  },
+  findAdjSibling : function(markup, cur_type, prev_type){
+    var childs = markup.getParentChilds();
+    return List.find(childs, function(child){
+      var next = child.getNext();
+      return next && prev_type.test(child) && cur_type.test(next);
+    });
+  },
+  findGenSibling : function(markup, cur_type, prev_type){
+    var childs = markup.getParentChilds();
+    var sibling = List.find(childs, function(child){
+      return prev_type.test(child);
+    });
+    if(sibling === null){
+      return null;
+    }
+    markup = sibling.getNext();
+    while(markup !== null){
+      if(cur_type.test(markup)){
+	return sibling;
+      }
+      markup = markup.getNext();
+    }
+    return null;
+  }
+};
+
+
+var SelectorLexer = (function(){
+  function SelectorLexer(src){
+    this.buff = this._normalize(src);
+  }
+
+  var rex_type = /^[\w-_\.#\*]+/;
+  var rex_attr = /^\[[^\]]+\]/;
+  var rex_pseudo = /^:{1,2}[\w-_]+/;
+  
+  SelectorLexer.prototype = {
+    getTokens : function(){
+      var tokens = [];
+      var push = function(token){ tokens.push(token); };
+      while(this.buff !== ""){
+	var token = this.get();
+	if(token === null){
+	  break;
+	}
+	push(token);
+      }
+      return tokens;
+    },
+    get : function(){
+      if(this.buff === ""){
+	return null;
+      }
+      var c1 = this.buff.charAt(0);
+      switch(c1){
+      case "+": case "~": case ">": // combinator
+	this._stepBuff(1);
+	return c1;
+      default: // selector-type
+	var type = this._getType();
+	if(type){
+	  var attr = this._getAttr();
+	  var pseudo = this._getPseudo();
+	  return this._parseType(type, attr, pseudo);
+	}
+      }
+      throw "invalid selector:" + this.buff;
+    },
+    _normalize : function(src){
+      return Utils.trim(src).replace(/\s+/g, " ");
+    },
+    _stepBuff : function(count){
+      this.buff = Utils.trim(this.buff.slice(count));
+    },
+    _parseType : function(str, attr, pseudo){
+      return new SelectorType({
+	name:this._getName(str),
+	id:this._getId(str),
+	className:this._getClassName(str),
+	attr:(attr? (new SelectorAttr(attr)) : null),
+	pseudo:(pseudo? (new SelectorPseudo(pseudo)) : null)
+      });
+    },
+    _getByRex : function(rex){
+      var ret = null;
+      var match = this.buff.match(rex);
+      if(match){
+	ret = match[0];
+	this._stepBuff(ret.length);
+      }
+      return ret;
+    },
+    _getName : function(str){
+      return str.replace(/[\.#].+$/, "");
+    },
+    _getId : function(str){
+      var parts = str.split("#");
+      return (parts.length > 0)? parts[1] : "";
+    },
+    _getClassName : function(str){
+      var parts = str.split(".");
+      return (parts.length >= 2)? parts[1] : "";
+    },
+    _getType : function(){
+      return this._getByRex(rex_type);
+    },
+    _getAttr : function(){
+      return this._getByRex(rex_attr);
+    },
+    _getPseudo : function(){
+      return this._getByRex(rex_pseudo);
+    }
+  };
+
+  return SelectorLexer;
+})();
+
+
+var SelectorStateMachine = {
+  accept : function(tokens, markup){
+    if(tokens.length === 0){
+      throw "selector syntax error:" + src;
+    }
+    var pos = tokens.length - 1;
+    var pop = function(){
+      return (pos < 0)? null : tokens[pos--];
+    };
+    var push_back = function(){
+      pos++;
+    };
+    var cur, next, next2, combinator;
+    while(pos >= 0){
+      cur = pop();
+      if(cur instanceof SelectorType === false){
+	throw "selector syntax error:" + src;
+      }
+      if(!cur.test(markup)){
+	return false;
+      }
+      next = pop();
+      if(next === null){
+	return true;
+      }
+      if(next instanceof SelectorType){
+	next2 = next;
+	combinator = " "; // descendant combinator
+      } else if(typeof next === "string"){
+	combinator = next;
+	next2 = pop();
+	if(next2 === null || next2 instanceof SelectorType === false){
+	  throw "selector syntax error:" + src;
+	}
+      }
+      switch(combinator){
+      case " ": markup = SelectorCombinator.findDescendant(markup, next2); break;
+      case ">": markup = SelectorCombinator.findChild(markup, next2); break;
+      case "+": markup = SelectorCombinator.findAdjSibling(markup, cur, next2); break;
+      case "~": markup = SelectorCombinator.findGenSibling(markup, cur, next2); break;
+      default: throw "selector syntax error:invalid combinator(" + combinator + ")";
+      }
+      if(markup === null){
+	return false;
+      }
+      push_back();
+    }
+    return true; // all accepted
+  }
+};
+
 var Selector = (function(){
   function Selector(key, value){
-    this.key = this._createKey(key);
-    this.rex = this._createRegExp(this.key);
+    this.key = this._normalizeKey(key);
     this.value = this._formatValue(value);
+    this.tokens = this._getSelectorTokens(this.key);
+    this.specificity = this._getSpecificity(this.tokens);
   }
 
   var set_format_value = function(ret, prop, format_value){
@@ -1773,21 +2135,24 @@ var Selector = (function(){
     getValue : function(){
       return this.value;
     },
-    test : function(dst_key){
-      dst_key = dst_key.toLowerCase();
-      if(this.rex === null){
-	return this.key === dst_key;
-      }
-      return this.rex.test(dst_key);
+    test : function(markup){
+      return SelectorStateMachine.accept(this.tokens, markup);
     },
-    hasClass : function(){
-      return (/\.[^\.\s]+/).test(this.key);
+    isPseudoElement : function(){
+      return this.key.indexOf("::") >= 0;
     },
-    hasId : function(){
-      return (/#[^#\s]+/).test(this.key);
+    hasPseudoElement : function(element_name){
+      return this.key.indexOf("::" + element_name) >= 0;
     },
-    hasContext : function(){
-      return (/[\S]+\s+[\S]+/).test(this.key);
+    _getSpecificity : function(tokens){
+      return 0; // TODO
+    },
+    _getSelectorTokens : function(key){
+      var lexer = new SelectorLexer(key);
+      return lexer.getTokens();
+    },
+    _normalizeKey : function(key){
+      return Utils.trim(key).toLowerCase().replace(/\s+/g, " ");
     },
     _formatValue : function(value){
       var ret = {};
@@ -1795,24 +2160,6 @@ var Selector = (function(){
 	set_format_value(ret, prop, CssParser.format(prop, value[prop]));
       }
       return ret;
-    },
-    _createKey : function(key){
-      return Utils.trim(key).toLowerCase()
-	.replace(/\s+/g, " ") // shorten space
-      ;
-    },
-    _createPattern : function(key){
-      return key
-	.replace(/([^\s#\^]*)#(\S+)/g, "$1#$2")
-	.replace(/([^\s\.\^]*)\.(\S+)/g, "$1\\.$2")
-	.replace(/\s/g, "(\\s|[a-z0-9-_=:\\[\\]])*") + "$";
-    },
-    _createRegExp : function(key){
-      if(!this.hasId() && !this.hasClass() && !this.hasContext()){
-	return null;
-      }
-      var pat = this._createPattern(key);
-      return new RegExp(pat);
     }
   };
 
@@ -1822,31 +2169,59 @@ var Selector = (function(){
 
 var Selectors = (function(){
   var selectors = [];
+  var selectors_pe = [];
 
-  // initialize default selectors
-  for(var selector_key in Style){
-    selectors.push(new Selector(selector_key, Style[selector_key]));
-  }
+  var update_value = function(selector_key, value){
+    Args.copy(Style[selector_key], value);
+  };
+
+  var insert_value = function(selector_key, value){
+    var selector = new Selector(selector_key, value);
+    if(selector.isPseudoElement()){
+      selectors_pe.push(selector);
+    } else {
+      selectors.push(selector);
+    }
+    return selector;
+  };
+  
+  var get_value = function(markup){
+    return List.fold(selectors, {}, function(ret, selector){
+      if(!selector.isPseudoElement() && selector.test(markup)){
+	return Args.copy(ret, selector.getValue());
+      }
+      return ret;
+    });
+  };
+
+  var get_value_pe = function(markup, pseudo_element){
+    return List.fold(selectors_pe, {}, function(ret, selector){
+      if(selector.hasPseudoElement(pseudo_element) && selector.test(markup)){
+	return Args.copy(ret, selector.getValue());
+      }
+      return ret;
+    });
+  };
+
+  // initialize selector list
+  Obj.iter(Style, function(obj, key, value){
+    insert_value(key, value);
+  });
 
   return {
     setValue : function(selector_key, value){
       if(Style[selector_key]){
-	Args.copy(Style[selector_key], value);
+	update_value(selector_key, value);
       } else {
-	Style[selector_key] = value;
-	selectors.push(new Selector(selector_key, value));
+	var selector = insert_value(selector_key, value);
+	Style[selector_key] = selector.getValue();
       }
     },
-    getValue : function(selector_key){
-      return List.fold(selectors, {}, function(ret, selector){
-	return selector.test(selector_key)? Args.copy(ret, selector.getValue()) : ret;
-      });
-    },
-    getMergedValue : function(selector_keys){
-      var self = this;
-      return List.fold(selector_keys, {}, function(ret, selector_key){
-	return Args.copy(ret, self.getValue(selector_key));
-      });
+    getValue : function(markup, pseudo_element){
+      if(pseudo_element){
+	return get_value_pe(markup, pseudo_element);
+      }
+      return get_value(markup);
     }
   };
 })();
@@ -1941,63 +2316,46 @@ var TagAttrParser = (function(){
 })();
 
 var Tag = (function (){
-  function Tag(src, content){
+  var global_tag_id = 0;
+  //var rex_first_letter = /(^(<[^>]+>|[\s\n])*)(\S)/mi;
+  var rex_first_letter = /(^(<[^>]+>|[\s\n])*)(\S)/mi;
+
+  function Tag(src, content_raw){
     this._type = "tag";
     this._inherited = false; // flag to avoid duplicate inheritance
+    this._gtid = global_tag_id++;
     this.src = src;
-    this.name = this._parseName(this.src);
     this.parent = null;
-    this.contentRaw = content || "";
-    this.dataset = {};
-    this.tagAttr = {};
-    this.cssAttrContext = {};
-    this.cssAttrDynamic = {}; // updated by 'setCssAttr'.
+    this.next = null;
+    this.contentRaw = content_raw || "";
+    this.name = this._parseName(this.src);
+    this.tagAttr = TagAttrParser.parse(this.src);
+    this.id = this.tagAttr.id || "";
+    this.classes = this._parseClasses(this.tagAttr["class"] || "");
+    this.dataset = {}; // set by _parseTagAttr
     this.childs = []; // updated by inherit
+    this.cssAttrStatic = this._getSelectorValue(); // initialize css-attr, but updated when 'inherit'.
+    this.cssAttrDynamic = {}; // added by setCssAttr
 
-    this.tagAttr = this._parseTagAttr(this.src);
-    this.id = this._parseId();
-    this.classes = this._parseClasses();
-    this.selectors = this._parseSelectors(this.id, this.classes);
-    this.cssAttrContext = this._parseCssAttr(this.selectors);
+    // initialize inline-style value
+    if(this.tagAttr.style){
+      this._parseInlineStyle(this.tagAttr.style || "");
+    }
+    this._parseDataset(); // initialize data-set values
   }
 
-  // name and value regexp
-  var rex_first_letter = /(^(<[^>]+>|[\s\n])*)(\S)/mi;
-  
-  // utility functions
-  var css_attr_cache = {};
-  var add_css_attr_cache = function(key, value){
-    css_attr_cache[key] = value;
-  };
-  var get_css_attr_cache = function(key){
-    return css_attr_cache[key] || null;
-  };
-
   Tag.prototype = {
-    // copy parent settings in 'markup' level
-    inherit : function(parent_tag){
-      if(this._inherited){
+    inherit : function(parent_tag, context){
+      if(this._inherited || !this.hasLayout()){
 	return; // avoid duplicate initialize
       }
       var self = this;
       this.parent = parent_tag;
       this.parent.addChild(this);
-      if(parent_tag.getName() != "body"){
-	var prev_selector_size = this.selectors.length;
-	var parent_selectors = parent_tag.getSelectors();
-	var ctx_selectors = this._parseContextSelectors(parent_selectors);
-	this.selectors = this.selectors.concat(ctx_selectors);
-	if(this.selectors.length > prev_selector_size){
-	  this.cssAttrContext = this._parseCssAttr(this.selectors); // update style by new selector list
-	}
+      this.cssAttrStatic = this._getSelectorValue(); // reget css-attr with parent enabled.
+      if(this.cssAttrStatic.onload){
+	this.cssAttrStatic.onload(this, context);
       }
-      // copy 'inherit' value from parent.
-      for(var prop in this.cssAttrContext){
-	if(this.cssAttrContext[prop] === "inherit"){
-	  this.setCssAttr(prop, parent_tag.getAttr(prop));
-	}
-      }
-      this.fullSelectorCacheKey = this._getCssCacheKey(this.selectors);
       this._inherited = true;
     },
     setContentRaw : function(content_raw){
@@ -2014,18 +2372,13 @@ var Tag = (function (){
 	this.setCssAttr(prop, obj[prop]);
       }
     },
-    setFirstChild : function(){
-      var css = this.getPseudoClassCssAttr("first-child");
-      this.setCssAttrs(css);
-    },
-    setFirstLetter : function(){
-      var cache_key = this.getDataset("key");
-      var cache = get_css_attr_cache(cache_key);
-      if(cache){
-	this.setCssAttrs(cache);
-      }
+    setNext : function(tag){
+      this.next = tag;
     },
     addChild : function(tag){
+      if(this.childs.length > 0){
+	List.last(this.childs).setNext(tag);
+      }
       this.childs.push(tag);
     },
     addClass : function(klass){
@@ -2042,11 +2395,11 @@ var Tag = (function (){
     iterCssAttrDynamic : function(fn){
       List.each(this.cssAttrDynamic, fn);
     },
-    iterCssAttrContext : function(fn){
-      List.each(this.cssAttrContext, fn);
+    iterCssAttrStatic : function(fn){
+      List.each(this.cssAttrStatic, fn);
     },
     iterCssAttr : function(fn){
-      this.iterCssAttrContext(fn);
+      this.iterCssAttrStatic(fn);
       this.iterCssAttrDynamic(fn); // dynamic attrs prior to static ones.
     },
     iterAttr : function(fn){
@@ -2054,6 +2407,7 @@ var Tag = (function (){
       this.iterTagAttr(fn); // inline attrs prior to css attrs.
     },
     getName : function(){
+      //return this.alias || this.name;
       return this.name;
     },
     getAttr : function(name, def_value){
@@ -2064,6 +2418,9 @@ var Tag = (function (){
     },
     getChilds : function(){
       return this.childs;
+    },
+    getNext : function(){
+      return this.next || null;
     },
     getParentChilds : function(){
       return this.parent? this.parent.getChilds() : [];
@@ -2077,17 +2434,6 @@ var Tag = (function (){
     getOrder : function(){
       return this.order || -1;
     },
-    getPseudoClassCssAttr : function(class_name){
-      var selectors = this._parsePseudoClassSelectors(class_name);
-      return this._parseCssAttr(selectors);
-    },
-    getPseudoElementCssAttr : function(element_name){
-      var selectors = this._parsePseudoElementSelectors(element_name);
-      return this._parseCssAttr(selectors);
-    },
-    getSelectors : function(){
-      return this.selectors;
-    },
     getCssClasses : function(){
       return this.classes.join(" ");
     },
@@ -2095,19 +2441,7 @@ var Tag = (function (){
       return this.tagAttr[name] || ((typeof def_value !== "undefined")? def_value : null);
     },
     getCssAttr : function(name, def_value){
-      return this.cssAttrDynamic[name] || this.cssAttrContext[name] || ((typeof def_value !== "undefined")? def_value : null);
-    },
-    // used for property that could be contructed with multiple values such as margin(start/end/before/after).
-    // for example, when we get "margin" of some target,
-    // we read style from default css, and context selector css, and inline style,
-    // and we must 'merge' them to get strict style settings.
-    getCssAttrs : function(name, def_value){
-      return List.fold([this.cssAttrContext, this.cssAttrDynamic], [], function(ret, target){
-	if(typeof target[name] !== "undefined"){
-	  ret.push(target[name]);
-	}
-	return ret;
-      });
+      return this.cssAttrDynamic[name] || this.cssAttrStatic[name] || ((typeof def_value !== "undefined")? def_value : null);
     },
     getDataset : function(name, def_value){
       return this.dataset[name] || ((typeof def_value !== "undefined")? def_value : null);
@@ -2150,6 +2484,13 @@ var Tag = (function (){
 	return new BoxSize(icon_size, icon_size);
       }
       return null;
+    },
+    rename : function(name){
+      this.name = name;
+    },
+    regetSelectorValue : function(){
+      this.cssAttrStatic = {};
+      this._getSelectorValue();
     },
     hasStaticSize : function(){
       return (this.getAttr("width") !== null && this.getAttr("height") !== null);
@@ -2212,12 +2553,6 @@ var Tag = (function (){
     isSingleTag : function(){
       return this.getCssAttr("single") === "true";
     },
-    isChildContentTag : function(){
-      if(this.isSingleTag()){
-	return false;
-      }
-      return true;
-    },
     isTcyTag : function(){
       return this.getCssAttr("text-combine", "") === "horizontal";
     },
@@ -2240,23 +2575,26 @@ var Tag = (function (){
       var name = this.getName();
       return name === "end-page" || name === "page-break";
     },
-    _getChildIndexFrom : function(childs){
+    isSameTag : function(dst){
+      return this._gtid === dst._gtid;
+    },
+    getChildIndexFrom : function(childs){
       var self = this;
       return List.indexOf(childs, function(tag){
-	return Token.isSame(self, tag);
+	return self.isSameTag(tag);
       });
     },
     getChildNth : function(){
-      return this._getChildIndexFrom(this.getParentChilds());
+      return this.getChildIndexFrom(this.getParentChilds());
     },
     getLastChildNth : function(){
-      return this._getChildIndexFrom(List.reverse(this.getParentChilds()));
+      return this.getChildIndexFrom(List.reverse(this.getParentChilds()));
     },
     getChildOfTypeNth : function(){
-      return this._getChildIndexFrom(this.getParentTypeChilds());
+      return this.getChildIndexFrom(this.getParentTypeChilds());
     },
     getLastChildOfTypeNth : function(){
-      return this._getChildIndexFrom(this.getParentTypeChilds());
+      return this.getChildIndexFrom(this.getParentTypeChilds());
     },
     isFirstChild : function(){
       return this.getChildNth() === 0;
@@ -2277,19 +2615,19 @@ var Tag = (function (){
     },
     isOnlyOfType : function(){
       var childs = this.getParentTypeChilds();
-      return (childs.length === 1 && Token.isSame(childs[0], this));
+      return (childs.length === 1 && this.isSame(childs[0]));
     },
     isRoot : function(){
       return this.parent === null;
     },
     isEmpty : function(){
-      return this.getContent() === "";
+      return this.contentRaw === "";
     },
-    _getCssCacheKey : function(selectors){
-      return selectors.join("*");
-    },
-    _getPseudoElementCssCacheKey : function(element_name){
-      return [this.fullSelectorCacheKey, element_name].join("::");
+    _getSelectorValue : function(){
+      if(this.isPseudoElement()){
+	return Selectors.getValue(this.parent, this.getName());
+      }
+      return Selectors.getValue(this);
     },
     _parseName : function(src){
       return src.replace(/</g, "").replace(/\/?>/g, "").split(/\s/)[0].toLowerCase();
@@ -2299,12 +2637,9 @@ var Tag = (function (){
     },
     // <p class='hi hey'>
     // => ["hi", "hey"]
-    _parseClasses : function(){
-      var str = this.tagAttr["class"] || "";
-      if(str === ""){
-	return [];
-      }
-      return str.split(/\s+/);
+    _parseClasses : function(class_value){
+      class_value = Utils.trim(class_value.replace(/\s+/g, " "));
+      return (class_value === "")? [] : class_value.split(/\s+/);
     },
     // <p class='hi hey'>
     // => [".hi", ".hey"]
@@ -2313,113 +2648,54 @@ var Tag = (function (){
 	return "." + class_name;
       });
     },
-    // <p id='foo' class='hi hey'>
-    // => ["p", "p.hi", "p.hey", "p#foo"]
-    _parseSelectors : function(id, classes){
-      var tag_name = this.getName();
-      var basic_selector = [tag_name];
-      var class_selectors = List.map(classes, function(class_name){
-	return tag_name + "." + class_name;
-      });
-      var id_selector = id? [tag_name + "#" + id] : [];
-      return basic_selector.concat(class_selectors).concat(id_selector);
+    _setPseudoFirst : function(content){
+      var first_letter = Selectors.getValue(this, "first-letter");
+      content = Obj.isEmpty(first_letter)? content : this._setPseudoFirstLetter(content);
+      var first_line = Selectors.getValue(this, "first-line");
+      return Obj.isEmpty(first_line)? content : this._setPseudoFirstLine(content);
     },
-    // parent_keys: ["div", "div.parent"]
-    // child_keys: ["p", "p.child"]
-    // =>["div p", "div p.child", "div.parent p", "div.parent p.child"]
-    _parseContextSelectors : function(parent_selectors){
-      var child_selectors = this.selectors;
-      return List.fold(parent_selectors, [], function(ret1, parent_key){
-	return ret1.concat(List.fold(child_selectors, [], function(ret2, child_key){
-	  return ret2.concat([parent_key + " " + child_key]);
-	}));
-      });
-    },
-    // if class_name is "first-child",
-    // and this.selectors is ["p", "p.hoge"]
-    // => ["p:first-child", "p.hoge:first-child"]
-    _parsePseudoClassSelectors : function(class_name){
-      return List.map(this.selectors, function(key){
-	return key + ":" + class_name;
-      });
-    },
-    // if element_name is "before",
-    // and this.selectors is ["p", "p.hoge"]
-    // => ["p::before", "p.hoge::before"]
-    _parsePseudoElementSelectors : function(element_name){
-      return List.map(this.selectors, function(key){
-	return key + "::" + element_name;
-      });
-    },
-    _parseCssAttr : function(selectors){
-      var cache_key = this._getCssCacheKey(selectors);
-      var cache = get_css_attr_cache(cache_key);
-      if(cache === null){
-	cache = Selectors.getMergedValue(selectors);
-	add_css_attr_cache(cache_key, cache);
-      }
-      return cache;
-    },
-    _parsePseudoElementContentSrc : function(element_name){
-      var css_attr = this.getPseudoElementCssAttr(element_name);
-      if(Obj.isEmpty(css_attr)){
-	return "";
-      }
-      var cache_key = this._getPseudoElementCssCacheKey(element_name);
-      add_css_attr_cache(css_attr);
-      var content = css_attr.content || "";
-      return Html.tagWrap(element_name, content, {"data-key":cache_key});
-    },
-    _appendFirstLetter : function(content){
-      var css_attr = this.getPseudoElementCssAttr("first-letter");
-      if(Obj.isEmpty(css_attr)){
-	return content;
-      }
-      var cache_key = this._getPseudoElementCssCacheKey(this.selectors, "first-letter");
-      add_css_attr_cache(cache_key, css_attr);
+    _setPseudoFirstLetter : function(content){
       return content.replace(rex_first_letter, function(match, p1, p2, p3){
-	return p1 + Html.tagStart("first-letter", {"data-key":cache_key}) + p3 + "</first-letter>";
+	return p1 + Html.tagWrap("first-letter", p3);
       });
+    },
+    _setPseudoFirstLine : function(content){
+      return Html.tagWrap("first-line", content);
+    },
+    _getPseudoBefore : function(){
+      var attr = Selectors.getValue(this, "before");
+      return Obj.isEmpty(attr)? "" : Html.tagWrap("before", attr.content || "");
+    },
+    _getPseudoAfter : function(){
+      var attr = Selectors.getValue(this, "after");
+      return Obj.isEmpty(attr)? "" : Html.tagWrap("after", attr.content || "");
     },
     _parseContent : function(content_raw){
-      var before = this._parsePseudoElementContentSrc("before");
-      var after = this._parsePseudoElementContentSrc("after");
-      return this._appendFirstLetter([before, content_raw, after].join(""));
-    },
-    // <img src='/path/to/img' push>
-    // => {src:'/path/to/img', push:true}
-    _parseTagAttr : function(src){
-      var self = this;
-      var attr = TagAttrParser.parse(this.src);
-      for(var name in attr){
-	// inline style
-	if(name === "style"){
-	  // add to dynamic css
-	  var inline_css = this._parseInlineStyle(attr[name]);
-	  Args.copy(this.cssAttrDynamic, inline_css);
-	} else if(name.indexOf("data-") === 0){
-	  // <div data-name="john">
-	  // => {name:"john"}
-	  var dataset_name = this._parseDatasetName(name);
-	  this.dataset[dataset_name] = attr[name];
-	}
-      }
-      return attr;
+      var before = this._getPseudoBefore();
+      var after = this._getPseudoAfter();
+      return this._setPseudoFirst([before, content_raw, after].join(""));
     },
     // "border:0; margin:0"
     // => {border:0, margin:0}
     _parseInlineStyle : function(src){
-      var attr = {};
+      var dynamic_attr = this.cssAttrDynamic;
       var stmts = (src.indexOf(";") >= 0)? src.split(";") : [src];
       List.iter(stmts, function(stmt){
 	var nv = stmt.split(":");
 	if(nv.length >= 2){
 	  var prop = Utils.trim(nv[0]);
-	  var val = Utils.trim(nv[1]);
-	  attr[prop] = val;
+	  var value = Utils.trim(nv[1]);
+	  dynamic_attr[prop] = value;
 	}
       });
-      return attr;
+    },
+    _parseDataset : function(){
+      for(var name in this.tagAttr){
+	if(name.indexOf("data-") === 0){
+	  var dataset_name = this._parseDatasetName(name);
+	  this.dataset[dataset_name] = this.tagAttr[name];
+	}
+      }
     },
     // "data-name" => "name"
     // "data-family-name" => "familyName"
@@ -2434,9 +2710,6 @@ var Tag = (function (){
 
 
 var Token = {
-  isSame : function(token1, token2){
-    return token1._gtid === token2._gtid;
-  },
   isTag : function(token){
     return token._type === "tag";
   },
@@ -4758,9 +5031,6 @@ var Box = (function(){
     getCssClasses : function(){
       return this.getClasses().join(" ");
     },
-    getFirstChild : function(){
-      return this.childs.getFirst();
-    },
     getChilds : function(){
       return this.childs.get();
     },
@@ -5253,12 +5523,10 @@ var BoxStyle = {
 
 
 var Lexer = (function (){
-
-  var rexTcy = /\d\d|!\?|!!|\?!|\?\?/;
-  var rexWord = /^([\w!\.\?\/\_:#;"',]+)/;
-  var rexTag = /^(<[^>]+>)/;
-  var rexCharRef = /^(&[^;\s]+;)/;
-  var global_token_id = 0;
+  var rex_tcy = /\d\d|!\?|!!|\?!|\?\?/;
+  var rex_word = /^([\w!\.\?\/\_:#;"',]+)/;
+  var rex_tag = /^(<[^>]+>)/;
+  var rex_char_ref = /^(&[^;\s]+;)/;
 
   function Lexer(src){
     this.pos = 0;
@@ -5280,7 +5548,6 @@ var Lexer = (function (){
       var token = this._getToken();
       if(token){
 	token.spos = this.pos;
-	token._gtid = global_token_id++;
       }
       return token;
     },
@@ -5297,17 +5564,17 @@ var Lexer = (function (){
     _getToken : function(){
       if(this.buff === ""){
 	return null;
-      } else if(this.buff.match(rexTag)){
+      } else if(this.buff.match(rex_tag)){
 	return this._parseTag(RegExp.$1);
-      } else if(this.buff.match(rexWord)){
+      } else if(this.buff.match(rex_word)){
 	var str = RegExp.$1;
 	if(str.length === 1){
 	  return this._parseChar(str);
-	} else if(str.length === 2 && str.match(rexTcy)){
+	} else if(str.length === 2 && str.match(rex_tcy)){
 	  return this._parseTcy(str);
 	}
 	return this._parseWord(str);
-      } else if(this.buff.match(rexCharRef)){
+      } else if(this.buff.match(rex_char_ref)){
 	return this._parseCharRef(RegExp.$1);
       } else {
 	return this._parseChar(this._getChar());
@@ -5354,7 +5621,7 @@ var Lexer = (function (){
       if(tag.isTcyTag()){
 	return this._parseTcyTag(tag);
       }
-      if(tag.isChildContentTag()){
+      if(!tag.isSingleTag()){
 	return this._parseChildContentTag(tag);
       }
       return tag;
@@ -5955,90 +6222,6 @@ var DocumentHeader = (function(){
 })();
 
 
-var BlockContext = (function(){
-  function BlockContext(){
-    this.tagStack = new TagStack();
-  }
-
-  BlockContext.prototype = {
-    pushTag : function(tag){
-      this.tagStack.push(tag);
-    },
-    popTag : function(){
-      return this.tagStack.pop();
-    },
-    getHeadTag : function(){
-      return this.tagStack.getHead();
-    },
-    getTagStack : function(){
-      return this.tagStack;
-    },
-    getTagDepth : function(){
-      return this.tagStack.getDepth();
-    },
-    getTagDepthByName : function(name){
-      return this.tagStack.getDepthByName(name);
-    },
-    findTag : function(fn){
-      return this.tagStack.find(fn);
-    },
-    isEmpty : function(){
-      return this.tagStack.isEmpty();
-    },
-    isTagEnable : function(fn){
-      return this.tagStack.exists(fn);
-    },
-    isTagNameEnable : function(tag_name){
-      return this.tagStack.isTagNameEnable(tag_name);
-    },
-    isHeaderEnable : function(){
-      return this.tagStack.exists(function(tag){
-	return tag.isHeaderTag();
-      });
-    }
-  };
-
-  return BlockContext;
-})();
-
-var InlineContext = (function(){
-  function InlineContext(){
-    this.tagStack = new TagStack();
-  }
-
-  InlineContext.prototype = {
-    pushTag : function(tag){
-      this.tagStack.push(tag);
-    },
-    popTag : function(){
-      return this.tagStack.pop();
-    },
-    getHeadTag : function(){
-      return this.tagStack.getHead();
-    },
-    getTagStack : function(){
-      return this.tagStack;
-    },
-    getTagDepth : function(){
-      return this.tagStack.getDepth();
-    },
-    findTag : function(fn){
-      return this.tagStack.find(fn);
-    },
-    isEmpty : function(){
-      return this.tagStack.isEmpty();
-    },
-    isTagEnable : function(fn){
-      return this.tagStack.exists(fn);
-    },
-    isTagNameEnable : function(tag_name){
-      return this.tagStack.isTagNameEnable(tag_name);
-    }
-  };
-
-  return InlineContext;
-})();
-
 var DocumentContext = (function(){
 
   // header id to associate each header with outline.
@@ -6049,8 +6232,6 @@ var DocumentContext = (function(){
     this.charPos = opt.charPos || 0;
     this.pageNo = opt.pageNo || 0;
     this.header = opt.header || new DocumentHeader();
-    this.blockContext = opt.blockContext || new BlockContext();
-    this.inlineContext = opt.inlineContext || new InlineContext();
     this.outlineContext = opt.outlineContext || new OutlineContext();
     this.anchors = opt.anchors || {};
   }
@@ -6077,32 +6258,6 @@ var DocumentContext = (function(){
     addCharPos : function(char_count){
       this.charPos += char_count;
     },
-    createInlineRoot : function(){
-      return new DocumentContext({
-	charPos:this.charPos,
-	pageNo:this.pageNo,
-	header:this.header,
-	anchors:this.anchors,
-	outlineContext:this.outlineContext,
-	blockContext:this.blockContext
-      });
-    },
-    inheritTag : function(tag){
-      var parent_tag = this.getCurBlockTag();
-      if(!tag.hasLayout()){
-	return;
-      }
-      if(parent_tag){
-	tag.inherit(parent_tag);
-      }
-      var onload = tag.getCssAttr("onload");
-      if(onload){
-	onload(this, tag);
-      }
-    },
-    isEmptyMarkupContext : function(){
-      return this.inlineContext.isEmpty();
-    },
     // anchors
     setAnchor : function(anchor_name){
       this.anchors[anchor_name] = this.pageNo;
@@ -6112,59 +6267,6 @@ var DocumentContext = (function(){
     },
     getAnchorPageNo : function(anchor_name){
       return this.anchors[anchor_name] || -1;
-    },
-    // inline context
-    getCurInlineTag : function(){
-      return this.inlineContext.getHeadTag();
-    },
-    getInlineTagStack : function(){
-      return this.inlineContext.getTagStack();
-    },
-    getInlineTagDepth : function(){
-      return this.inlineContext.getTagDepth();
-    },
-    pushInlineTag : function(tag){
-      this.inlineContext.pushTag(tag);
-    },
-    popInlineTag : function(){
-      return this.inlineContext.popTag();
-    },
-    findInlineTag : function(fn){
-      return this.inlineContext.findTag(fn);
-    },
-    isInlineTagEnable : function(fn){
-      return this.inlineContext.isTagEnable(fn);
-    },
-    // block context
-    isHeaderEnable : function(){
-      return this.blockContext.isHeaderEnable();
-    },
-    pushBlockTag : function(tag){
-      this.blockContext.pushTag(tag);
-    },
-    popBlockTag : function(){
-      return this.blockContext.popTag();
-    },
-    getBlockTagStack : function(){
-      return this.blockContext.getTagStack();
-    },
-    getCurBlockTag : function(){
-      return this.blockContext.getHeadTag();
-    },
-    getBlockDepth : function(){
-      return this.blockContext.getTagDepth();
-    },
-    getBlockDepthByName : function(name){
-      return this.blockContext.getTagDepthByName(name);
-    },
-    getOutlineTitle : function(){
-      return this.blockContext.getOutlineTitle();
-    },
-    findBlockTag : function(fn){
-      return this.blockContext.findTag(fn);
-    },
-    isBlockTagEnable : function(fn){
-      return this.blockContext.isTagEnable(fn);
     },
     // outline context
     getOutlineBuffer : function(root_name){
@@ -6374,8 +6476,8 @@ var Collapse = (function(){
 
 
 var TokenStream = Class.extend({
-  init : function(src){
-    this.lexer = new Lexer(src);
+  init : function(src, lexer){
+    this.lexer = lexer || new Lexer(src);
     this.tokens = [];
     this.pos = 0;
     this.backupPos = 0;
@@ -6637,7 +6739,7 @@ var TableTagStream = FilteredTagStream.extend({
 	      name === "tr");
     });
     this.markup = markup;
-    this.markup.tableChilds = this.tokens = this._parseTokens(this.tokens);
+    this.markup.tableChilds = this.tokens = this._parseTokens(this.markup, this.tokens);
   },
   getPartition : function(box){
     var self = this;
@@ -6656,39 +6758,31 @@ var TableTagStream = FilteredTagStream.extend({
     });
     return partition;
   },
-  _setChildTokens : function(target, childs){
-    target.tableChilds = childs;
-    var len = childs.length;
-    if(len > 0){
-      target.firstChild = childs[0];
-      target.lastChild = childs[len - 1];
-    }
-    return target;
-  },
-  _parseTokens : function(tokens){
+  _parseTokens : function(parent_markup, tokens){
     var theads = [], tfoots = [], tbodies = [], self = this;
     var thead = null, tbody = null, tfoot = null;
     var ctx = {row:0, col:0, maxCol:0};
     List.iter(tokens, function(token){
+      token.inherit(parent_markup);
       if(Token.isTag(token)){
 	switch(token.name){
 	case "tr":
 	  token.row = ctx.row;
-	  self._setChildTokens(token, self._parseCols(ctx, token.getContent()));
+	  token.tableChilds = self._parseCols(ctx, token);
 	  ctx.row++;
 	  tbodies.push(token);
 	  break;
 	case "thead":
 	  thead = token;
-	  theads = theads.concat(self._parseRows(ctx, token.getContent()));
+	  theads = theads.concat(self._parseRows(ctx, token));
 	  break;
 	case "tbody":
 	  tbody = token;
-	  tbodies = tbodies.concat(self._parseRows(ctx, token.getContent()));
+	  tbodies = tbodies.concat(self._parseRows(ctx, token));
 	  break;
 	case "tfoot":
 	  tfoot = token;
-	  tfoots = tfoots.concat(self._parseRows(ctx, token.getContent()));
+	  tfoots = tfoots.concat(self._parseRows(ctx, token));
 	  break;
 	}
       }
@@ -6700,9 +6794,9 @@ var TableTagStream = FilteredTagStream.extend({
       if(thead === null){
 	thead = new Tag("<thead>");
       }
-      this._setChildTokens(thead, theads);
+      thead.tableChilds = theads;
       thead.row = nrow;
-      nrow += thead.tableChilds.length;
+      nrow += theads.length;
       ret.push(thead);
     }
 
@@ -6710,9 +6804,9 @@ var TableTagStream = FilteredTagStream.extend({
       if(tbody === null){
 	tbody = new Tag("<tbody>");
       }
-      this._setChildTokens(tbody, tbodies);
+      tbody.tableChilds = tbodies;
       tbody.row = nrow;
-      nrow += tbody.tableChilds.length;
+      nrow += tbodies.length;
       ret.push(tbody);
     }
 
@@ -6720,12 +6814,12 @@ var TableTagStream = FilteredTagStream.extend({
       if(tfoot === null){
 	tfoot = new Tag("<tfoot>");
       }
-      this._setChildTokens(tfoot, tfoots);
+      tfoot.tableChilds = tfoots;
       tfoot.row = nrow;
       ret.push(tfoot);
     }
 
-    this._setChildTokens(this.markup, ret);
+    this.markup.tableChilds = ret;
     this.markup.maxCol = ctx.maxCol;
     this.markup.rowCount = ctx.row;
 
@@ -6740,26 +6834,28 @@ var TableTagStream = FilteredTagStream.extend({
       return 0;
     });
   },
-  _parseRows : function(ctx, content){
+  _parseRows : function(ctx, parent){
     var self = this;
-    var rows = (new FilteredTagStream(content, function(tag){
+    var rows = (new FilteredTagStream(parent.getContent(), function(tag){
       return tag.getName() === "tr";
     })).getAll();
 
     return List.map(rows, function(row){
+      row.inherit(parent);
       row.row = ctx.row;
-      row = self._setChildTokens(row, self._parseCols(ctx, row.getContent()));
+      row.tableChilds = self._parseCols(ctx, row);
       ctx.row++;
       return row;
     });
   },
-  _parseCols : function(ctx, content){
-    var cols = (new FilteredTagStream(content, function(tag){
+  _parseCols : function(ctx, parent){
+    var cols = (new FilteredTagStream(parent.getContent(), function(tag){
       var name = tag.getName();
       return (name === "td" || name === "th");
     })).getAll();
 
     List.iteri(cols, function(i, col){
+      col.inherit(parent);
       col.row = ctx.row;
       col.col = i;
     });
@@ -6793,20 +6889,20 @@ var DefListTagStream = FilteredTagStream.extend({
 
 
 var RubyTagStream = TokenStream.extend({
-  init : function(src){
-    this._super(src);
+  init : function(markup_ruby){
+    this._super(markup_ruby.getContent());
     this.getAll();
-    this.tokens = this._parse();
+    this.tokens = this._parse(markup_ruby);
     this.rewind();
   },
-  _parse : function(stream){
+  _parse : function(markup_ruby){
     var ret = [];
     while(this.hasNext()){
-      ret.push(this._parseRuby());
+      ret.push(this._parseRuby(markup_ruby));
     }
     return ret;
   },
-  _parseRuby : function(stream){
+  _parseRuby : function(markup_ruby){
     var rbs = [];
     var rt = null;
     while(true){
@@ -6816,6 +6912,7 @@ var RubyTagStream = TokenStream.extend({
       }
       if(Token.isTag(token) && token.getName() === "rt"){
 	rt = token;
+	rt.inherit(markup_ruby);
 	break;
       }
       if(Token.isText(token)){
@@ -7006,22 +7103,15 @@ var ElementGenerator = Class.extend({
       return (new InlineBoxGenerator(tag, this.context)).yield(parent);
     case "div":
       if(tag.hasFlow()){
-	return (new InlinePageGenerator(tag, this.context.createInlineRoot())).yield(parent);
+	return (new InlinePageGenerator(tag, this.context)).yield(parent);
       }
       return (new InlineBoxGenerator(tag, this.context)).yield(parent);
     default:
-      return (new InlinePageGenerator(tag, this.context.createInlineRoot())).yield(parent);
+      return (new InlinePageGenerator(tag, this.context)).yield(parent);
     }
   },
   _getBoxType : function(){
     return this.markup.getName();
-  },
-  _setBoxFirstChild : function(box, parent){
-    // if box is first child of parent,
-    // copy style of <this.markup.name>:first-child.
-    if(box.isFirstChildOf(parent)){
-      this.markup.setFirstChild();
-    }
   },
   _setBoxClasses : function(box, parent){
     List.iter(this.markup.classes, function(klass){
@@ -7036,7 +7126,6 @@ var ElementGenerator = Class.extend({
     var box = Layout.createBox(size, parent, box_type);
     box.markup = this.markup;
     this._onReadyBox(box, parent);
-    this._setBoxFirstChild(box, parent);
     this._setBoxClasses(box, parent);
     this._setBoxStyle(box, parent);
     this._onCreateBox(box, parent);
@@ -7121,11 +7210,11 @@ var HrGenerator = ElementGenerator.extend({
 });
 
 var InlineTreeContext = (function(){
-  function InlineTreeContext(line, stream, context){
+  function InlineTreeContext(line, markup, stream, context){
     this.line = line;
+    this.markup = markup;
     this.stream = stream;
     this.context = context;
-    this.markup = this.context.getCurInlineTag() || null;
     this.lineStartPos = this.stream.getPos();
     this.textIndent = stream.isHead()? (line.textIndent || 0) : 0;
     this.maxFontSize = 0;
@@ -7208,9 +7297,6 @@ var InlineTreeContext = (function(){
     isEmptyText : function(){
       return this.lineTokens.length === 0;
     },
-    isInlineTagEmpty : function(){
-      return this.context.getInlineTagDepth() <= 0;
-    },
     isOverWithoutLineBreak : function(){
       return !this.lineBreak && (this.lineTokens.length > 0);
     },
@@ -7238,8 +7324,8 @@ var InlineTreeContext = (function(){
 	  if(next && Token.isWord(next)){
 	    token = this.stream.get();
 	  }
-	} else if(Token.isTag(token)){
-	  this.context.inheritTag(token);
+	} else if(Token.isTag(token) && this.markup){
+	  token.inherit(this.markup, this.context);
 	}
       }
       this.lastToken = token;
@@ -7584,20 +7670,9 @@ var InlineTreeGenerator = ElementGenerator.extend({
     var extent = parent.getContentExtent();
     return parent.flow.getBoxSize(measure, extent);
   },
-  _setFirstLineStyle : function(line, parent){
-    var css_attr = this.markup? this.markup.getPseudoElementCssAttr("first-line") : {};
-    if(!Obj.isEmpty(css_attr)){
-      var first_line_tag = new Tag("<first-line>");
-      first_line_tag.setCssAttrs(css_attr);
-      BoxStyle.set(first_line_tag, line, parent);
-    }
-  },
   _createLine  : function(parent){
     var size = this._getLineSize(parent);
     var line = Layout.createTextLine(size, parent);
-    if(this.lineNo === 0){
-      this._setFirstLineStyle(line, parent);
-    }
     line.markup = this.markup;
     line.lineNo = this.lineNo;
     return line;
@@ -7607,7 +7682,7 @@ var InlineTreeGenerator = ElementGenerator.extend({
     return this._yield(line);
   },
   _yield : function(line){
-    var ctx = new InlineTreeContext(line, this.stream, this.context);
+    var ctx = new InlineTreeContext(line, this.markup, this.stream, this.context);
 
     this.backup();
     while(true){
@@ -7695,9 +7770,6 @@ var InlineTreeGenerator = ElementGenerator.extend({
     if(Token.isTag(token) && token.getName() === "br"){
       return Exceptions.LINE_BREAK;
     }
-    if(Token.isTag(token) && token.getName() === "first-letter"){
-      token.setFirstLetter(); // load first-letter style
-    }
     // if block element, break line and force terminate generator
     if(token.isBlock()){
       ctx.pushBackToken(); // push back this token(this block is handled by parent generator).
@@ -7710,7 +7782,7 @@ var InlineTreeGenerator = ElementGenerator.extend({
     }
     // token is inline-block tag
     if(token.isInlineBlock()){
-      this.generator = new InlineBlockGenerator(token, ctx.createInlineRoot());
+      this.generator = new InlineBlockGenerator(token, this.context);
       return this.generator.yield(ctx.line);
     }
     // token is other inline tag
@@ -7769,6 +7841,8 @@ var InlineTreeGenerator = ElementGenerator.extend({
       return new RubyGenerator(tag, this.context);
     case "a":
       return new LinkGenerator(tag, this.context);
+    case "first-line":
+      return new FirstLineGenerator(tag, this.context);
     default:
       return new ChildInlineTreeGenerator(tag, this.context);
     }
@@ -7780,7 +7854,6 @@ var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
   init : function(markup, context){
     this.markup = markup;
     this.context = context;
-    this.context.pushInlineTag(this.markup);
     this.stream = this._createStream();
     this.lineNo = 0;
   },
@@ -7798,7 +7871,6 @@ var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
     return parent.flow.getBoxSize(measure, extent);
   },
   _onLastTree : function(){
-    this.context.popInlineTag();
   },
   _onCompleteTree : function(ctx, line){
     line.shortenMeasure();
@@ -7809,7 +7881,8 @@ var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
 
 var RubyGenerator = ChildInlineTreeGenerator.extend({
   _createStream : function(){
-    return new RubyTagStream(this.markup.getContent());
+    //return new RubyTagStream(this.markup.getContent());
+    return new RubyTagStream(this.markup);
   },
   _yieldElement : function(ctx){
     var ruby = this._super(ctx);
@@ -7844,9 +7917,26 @@ var LinkGenerator = ChildInlineTreeGenerator.extend({
   }
 });
 
+
+var FirstLineGenerator = ChildInlineTreeGenerator.extend({
+  init : function(markup, context){
+    this._super(markup, context);
+  },
+  _createLine : function(parent){
+    if(this.lineNo > 0){
+      // first-line tag has finished, so reset normal css of parent.
+      this.markup.rename(this.markup.parent.getName());
+      this.markup.regetSelectorValue();
+    }
+    return this._super(parent);
+  }
+});
+
+
 var BlockTreeContext = (function(){
-  function BlockTreeContext(page, stream, context){
+  function BlockTreeContext(page, markup, stream, context){
     this.page = page;
+    this.markup = markup;
     this.stream = stream;
     this.context = context;
     this.curExtent = 0;
@@ -7874,8 +7964,8 @@ var BlockTreeContext = (function(){
     },
     getNextToken : function(){
       var token = this.stream.get();
-      if(token && Token.isTag(token)){
-	this.context.inheritTag(token);
+      if(token && Token.isTag(token) && this.markup){
+	token.inherit(this.markup, this.context);
       }
       return token;
     }
@@ -7888,7 +7978,6 @@ var BlockTreeContext = (function(){
 var BlockTreeGenerator = ElementGenerator.extend({
   init : function(markup, context){
     this._super(markup, context);
-    this.context.pushBlockTag(this.markup);
     this.generator = null;
     this.stream = this._createStream();
     this.localPageNo = 0;
@@ -7929,7 +8018,7 @@ var BlockTreeGenerator = ElementGenerator.extend({
   },
   // fill page with child page elements.
   _yieldPageTo : function(page){
-    var ctx = new BlockTreeContext(page, this.stream, this.context);
+    var ctx = new BlockTreeContext(page, this.markup, this.stream, this.context);
 
     while(true){
       this.backup();
@@ -7993,7 +8082,6 @@ var BlockTreeGenerator = ElementGenerator.extend({
       .replace(/\r/g, ""); // discard CR
   },
   _onLastTree : function(page){
-    this.context.popBlockTag();
   },
   // called when page box is fully filled by blocks.
   _onCompleteTree : function(page){
@@ -8014,9 +8102,6 @@ var BlockTreeGenerator = ElementGenerator.extend({
     if(Token.isTag(token) && token.isPageBreakTag()){
       return Exceptions.PAGE_BREAK;
     }
-    if(Token.isTag(token) && token.getName() === "first-letter"){
-      token.setFirstLetter(); // load first-letter style
-    }
     if(Token.isInline(token)){
       // this is not block level element, so we push back this token,
       // and delegate this stream to InlineTreeGenerator from the head of this inline element.
@@ -8035,7 +8120,7 @@ var BlockTreeGenerator = ElementGenerator.extend({
     // yield it as single inline page with rest size of current parent.
     if(tag.hasFlow() && tag.getCssAttr("flow") != parent.getFlowName()){
       var inline_size = parent.getRestSize();
-      var generator = new InlinePageGenerator(tag, this.context.createInlineRoot());
+      var generator = new InlinePageGenerator(tag, this.context);
       return generator.yield(parent, inline_size);
     }
     this.generator = this._createChildBlockTreeGenerator(parent, tag);
@@ -8126,7 +8211,7 @@ var BlockTreeGenerator = ElementGenerator.extend({
     return new TableRowGroupGenerator(tag, this.context);
   },
   _getTableRowGenerator : function(parent, tag){
-    return new TableRowGenerator(tag, parent, this.context.createInlineRoot());
+    return new TableRowGenerator(tag, parent, this.context);
   }
 });
 
@@ -8215,24 +8300,10 @@ var BodyBlockTreeGenerator = SectionRootGenerator.extend({
     box.seekPos = this.stream.getSeekPos();
     box.pageNo = this.context.getPageNo();
     box.charPos = this.context.getCharPos();
-
-    // caution:
-    // box.lazy is a flag to see whether this box can be evaluated later.
-    // when lazy is enabled, we can evaluate the box at any time, it always yields same html.
-    // but this lazy flag at this time is not confirmed, it's temporary.
-    // this flag is confirmed when _onCompleteTree.
-    // if context is 'also' empty when page is completed, lazy flag is confirmed.
-    box.lazy = this.context.isEmptyMarkupContext();
     box.css["font-size"] = Layout.fontSize + "px";
     return box;
   },
   _onCompleteTree : function(page){
-    // lazy is confirmed when
-    // 1. inline level of context is empty when _createBox.
-    // 2. inline level of context is 'also' empty when _onCompleteTree.
-    // in short, if both head and tail are context free, lazy evaluation is enabled.
-    page.lazy = page.lazy && this.context.isEmptyMarkupContext();
-
     // step page no and character count inside this page
     this.context.stepPageNo();
     this.context.addCharPos(page.getCharCount());
@@ -8309,6 +8380,16 @@ var ParallelGenerator = ChildBlockTreeGenerator.extend({
     this.markup = markup;
     this.context = context;
     this.partition = partition;
+    this._inheritParent();
+  },
+  _inheritParent : function(){
+    var parent_markup = this.markup;
+    var context = this.context;
+    List.iter(this.generators, function(gen){
+      if(gen.markup){
+	gen.markup.inherit(parent_markup, context);
+      }
+    });
   },
   hasNext : function(){
     return List.exists(this.generators, function(generator){
@@ -8420,7 +8501,7 @@ var TableRowGenerator = ParallelGenerator.extend({
   init : function(markup, parent, context){
     var partition = parent.partition.getPartition(markup.tableChilds.length);
     var generators = List.map(markup.tableChilds, function(td){
-      return new ParaChildGenerator(td, context.createInlineRoot());
+      return new ParaChildGenerator(td, context);
     });
     this._super(generators, markup, context, partition);
   }
@@ -8945,12 +9026,8 @@ var PageGroupEvaluator = (function(){
       var self = this;
       var char_count = 0;
       var html = [];
-      var lazy = true;
       var results = List.map(page_group.getPages(), function(page){
 	var ret = self.evaluator.evaluate(page);
-	if(!ret.lazy){
-	  lazy = false;
-	}
 	char_count += ret.charCount;
 	html.push(ret.html);
 	return ret;
@@ -9019,6 +9096,9 @@ var PageStream = Class.extend({
   },
   getPageCount : function(){
     return this.buffer.length;
+  },
+  getGroupPageNo : function(cell_page_no){
+    return cell_page_no;
   },
   getOutlineTree : function(root_name){
     return this.generator.getOutlineTree(root_name || "body");
@@ -9096,10 +9176,6 @@ var PageStream = Class.extend({
     });
   },
   _addBuffer : function(entry){
-    // if entry can't be lazy, eval immediately.
-    if(!entry.lazy){
-      entry = this.evaluator.evaluate(entry);
-    }
     this.buffer.push(entry);
   },
   // common preprocessor
@@ -9143,9 +9219,6 @@ var PageGroup = (function(){
     },
     commit : function(){
       var first = this.getFirst();
-      var last = this.getLast();
-      // page group of evaluation can be lazy when both head and tail are context free.
-      this.lazy = first.lazy && last.lazy;
       this.percent = first.percent;
       this.seekPos = first.seekPos;
       this.pageNo = first.pageNo;
@@ -9213,7 +9286,7 @@ var PageGroupStream = PageStream.extend({
   }
 });
 
-Nehan.version = "4.0.2";
+Nehan.version = "4.0.3";
 
 Args.copy(Env, __engine_args.env || {});
 Args.copy(Layout, __engine_args.layout || {});
@@ -9259,6 +9332,12 @@ if(__engine_args.test){
   __exports.BoxChild = BoxChild;
   __exports.Box = Box;
   __exports.Selector = Selector;
+  __exports.SelectorLexer = SelectorLexer;
+  __exports.SelectorAttr = SelectorAttr;
+  __exports.SelectorPseudo = SelectorPseudo;
+  __exports.SelectorType = SelectorType;
+  __exports.SelectorCombinator = SelectorCombinator;
+  __exports.SelectorStateMachine = SelectorStateMachine;
   __exports.Tag = Tag;
   __exports.Char = Char;
   __exports.Word = Word;
@@ -9267,8 +9346,6 @@ if(__engine_args.test){
   __exports.Lexer = Lexer;
   __exports.Token = Token;
   __exports.TagStack = TagStack;
-  __exports.InlineContext = InlineContext;
-  __exports.BlockContext = BlockContext;
   __exports.DocumentContext = DocumentContext;
   __exports.TocContext = TocContext;
   __exports.EvalResult = EvalResult;
