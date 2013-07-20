@@ -2167,7 +2167,7 @@ var Selector = (function(){
       return this.value;
     },
     getSpec : function(){
-      return this.specificity;
+      return this.spec;
     },
     test : function(markup){
       return SelectorStateMachine.accept(this.tokens, markup);
@@ -2397,10 +2397,13 @@ var Tag = (function (){
       this.parent = parent_tag;
       this.parent.addChild(this);
       this.cssAttrStatic = this._getSelectorValue(); // reget css-attr with parent enabled.
+      this.callHook(this, context);
+      this._inherited = true;
+    },
+    callHook : function(context){
       if(this.cssAttrStatic.onload){
 	this.cssAttrStatic.onload(this, context);
       }
-      this._inherited = true;
     },
     setContentRaw : function(content_raw){
       this.contentRaw = content_raw;
