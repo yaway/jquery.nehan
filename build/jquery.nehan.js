@@ -781,6 +781,7 @@ var Reader = (function(){
       this.onCreateEngine = opt.onCreateEngine || function(){};
       this.onReadyPage = opt.onReadyPage || function(){};
       this.onComplete = opt.onComplete || function(){};
+      this.onError = opt.onError || function(){};
       this.onPage = opt.onPage || function(){};
       this.engine = this._createEngine();
       this.pager = this._createPager();
@@ -826,6 +827,9 @@ var Reader = (function(){
 	onProgress : function(caller){
 	  var page_result = caller.getSeekPageResult();
 	  self._onProgress(page_result);
+	},
+	onError : function(caller){
+	  self._onError(caller);
 	}
       });
     },
@@ -856,6 +860,9 @@ var Reader = (function(){
 	this.writePage(0);
 	this.onReadyPage(this);
       }
+    },
+    _onError : function(stream){
+      this.onError(stream);
     },
     _cacheResult : function(page_result){
       var html = this._outputScreenHtml(page_result);
@@ -1132,9 +1139,7 @@ Nehan.Reader.version = "1.0.0";
       // example: you cant edit style like this.
       /*
       engine.setStyle("h1", {
-	border:{
-	  after:"1px"
-	},
+	"border-width":"0 0 1px 0"
 	"font-size":"30px"
       });
       */
@@ -1152,7 +1157,6 @@ Nehan.Reader.version = "1.0.0";
     onPage : function(reader){
       // you can do something unique here.
     },
-
     // called after all pages generated.
     // this callback is called when you select pager of "indicator".
     // by default, we append outline at the bottom of reader.
@@ -1162,6 +1166,9 @@ Nehan.Reader.version = "1.0.0";
       if(outline_dom){
 	reader.getRootNode().appendChild(outline_dom);
       }
+    },
+    onError : function(reader){
+      alert("error at " + reader.getSeekPercent() + "%");
     }
   };
 })(jQuery);

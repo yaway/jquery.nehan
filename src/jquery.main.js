@@ -163,9 +163,7 @@
       // example: you cant edit style like this.
       /*
       engine.setStyle("h1", {
-	border:{
-	  after:"1px"
-	},
+	"border-width":"0 0 1px 0"
 	"font-size":"30px"
       });
       */
@@ -183,7 +181,6 @@
     onPage : function(reader){
       // you can do something unique here.
     },
-
     // called after all pages generated.
     // this callback is called when you select pager of "indicator".
     // by default, we append outline at the bottom of reader.
@@ -193,6 +190,9 @@
       if(outline_dom){
 	reader.getRootNode().appendChild(outline_dom);
       }
+    },
+    onError : function(reader){
+      alert("error at " + reader.getSeekPercent() + "%");
     }
   };
 })(jQuery);
