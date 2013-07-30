@@ -1194,11 +1194,15 @@ var List = {
     }
     return ret;
   },
-  last : function(lst, def_val){
-    if(lst.length === 0){
-      return def_val;
+  first : function(lst){
+    return lst[0] || null;
+  },
+  last : function(lst){
+    var len = lst.length;
+    if(len === 0){
+      return null;
     }
-    return lst[lst.length - 1];
+    return lst[len - 1];
   },
   zip : function(lst1, lst2){
     var ret = [];
@@ -1498,6 +1502,7 @@ var Exceptions = {
   SKIP:7,
   BREAK:8,
   IGNORE:9,
+  FORCE_TERMINATE:10,
   toString : function(num){
     for(var prop in this){
       if(this[prop] === num){
@@ -1947,7 +1952,7 @@ var SelectorType = (function(){
 var SelectorCombinator = {
   findDescendant : function(markup, parent_type){
     markup = markup.getParent();
-    while(markup !== null){
+    while(markup !== null && markup.name != "body"){
       if(parent_type.test(markup)){
 	return markup;
       }
@@ -1978,7 +1983,7 @@ var SelectorCombinator = {
       return null;
     }
     markup = sibling.getNext();
-    while(markup !== null){
+    while(markup !== null && markup.name != "body"){
       if(cur_type.test(markup)){
 	return sibling;
       }
@@ -2415,8 +2420,8 @@ var Tag = (function (){
 
   Tag.prototype = {
     inherit : function(parent_tag, context){
-      if(this._inherited || !this.hasLayout()){
-	return; // avoid duplicate initialize
+      if(this._inherited || !this.hasLayout() || parent_tag === null){
+	return this; // avoid duplicate initialize
       }
       var self = this;
       this.parent = parent_tag;
@@ -2424,6 +2429,7 @@ var Tag = (function (){
       this.cssAttrStatic = this._getSelectorValue(); // reget css-attr with parent enabled.
       this.callHook(context);
       this._inherited = true;
+      return this;
     },
     callHook : function(context){
       if(this.cssAttrStatic.onload){
@@ -2522,11 +2528,9 @@ var Tag = (function (){
       return this.contentRaw;
     },
     getContent : function(){
-      if(this.content){
-	return this.content;
-      }
-      this.content = this._parseContent(this.contentRaw);
-      return this.content;
+      var before = this._getPseudoBefore();
+      var after = this._getPseudoAfter();
+      return this._setPseudoFirst([before, this.contentRaw, after].join(""));
     },
     getSrc : function(){
       return this.src;
@@ -2741,11 +2745,6 @@ var Tag = (function (){
     _getPseudoAfter : function(){
       var attr = Selectors.getValue(this, "after");
       return Obj.isEmpty(attr)? "" : Html.tagWrap("after", attr.content || "");
-    },
-    _parseContent : function(content_raw){
-      var before = this._getPseudoBefore();
-      var after = this._getPseudoAfter();
-      return this._setPseudoFirst([before, content_raw, after].join(""));
     },
     // "border:0; margin:0"
     // => {border:0, margin:0}
@@ -5366,6 +5365,9 @@ var Box = (function(){
     isLinkLine : function(){
       return this.isTextLine() && this.getMarkupName() === "a";
     },
+    isPreLine : function(){
+      return this.isTextLine() && this.getMarkupName() === "pre";
+    },
     isFirstLetter : function(){
       return this.getMarkupName() === "first-letter";
     },
@@ -5606,7 +5608,7 @@ var HtmlLexer = (function (){
 
   function HtmlLexer(src){
     this.pos = 0;
-    this.buff = src;
+    this.buff = this._normalize(src);
     // TODO:
     // each time lexer is called 'get', this.buff is reduced.
     // but if we implement searching issue in this system,
@@ -5617,6 +5619,12 @@ var HtmlLexer = (function (){
   }
 
   HtmlLexer.prototype = {
+    _normalize : function(src){
+      return src
+	.replace(/^[ \n]+/, "") // shorten head space
+	.replace(/\s+$/, "") // discard tail space
+	.replace(/\r/g, ""); // discard CR
+    },
     isEmpty : function(){
       return this.empty;
     },
@@ -6305,14 +6313,177 @@ var DocumentContext = (function(){
   
   function DocumentContext(option){
     var opt = option || {};
+    this.markup = opt.markup || null;
+    this.stream = opt.stream || null;
     this.charPos = opt.charPos || 0;
     this.pageNo = opt.pageNo || 0;
+    this.localPageNo = opt.localPageNo || 0;
+    this.localLineNo = opt.localLineNo || 0;
     this.header = opt.header || new DocumentHeader();
+    this.blockContext = opt.blockContext || null;
+    this.inlineContext = opt.inlineContext || null;
     this.outlineContext = opt.outlineContext || new OutlineContext();
     this.anchors = opt.anchors || {};
   }
 
   DocumentContext.prototype = {
+    // docunemt type
+    setDocumentType : function(markup){
+      this.documentType = markup;
+    },
+    isFirstLocalPage : function(){
+      return this.localPageNo === 0;
+    },
+    stepLocalPageNo : function(){
+      this.localPageNo++;
+      return this.localPageNo;
+    },
+    stepLocalLineNo : function(){
+      this.localLineNo++;
+      return this.localLineNo;
+    },
+    getLocalPageNo : function(){
+      return this.localPageNo;
+    },
+    getLocalLineNo : function(){
+      return this.localLineNo;
+    },
+    // stream
+    getStream : function(){
+      return this.stream;
+    },
+    hasNextToken : function(){
+      return this.stream.hasNext();
+    },
+    getNextToken : function(){
+      return this.stream.get();
+    },
+    pushBackToken : function(){
+      this.stream.prev();
+    },
+    getStreamPos : function(){
+      return this.stream.getPos();
+    },
+    getSeekPos : function(){
+      return this.stream.getSeekPos();
+    },
+    getSeekPercent : function(){
+      return this.stream.getSeekPercent();
+    },
+    getStreamTokenCount : function(){
+      return this.stream.getTokenCount();
+    },
+    isStreamHead : function(){
+      return this.stream.isHead();
+    },
+    // current markup
+    getMarkup : function(){
+      return this.markup;
+    },
+    getMarkupStaticSize : function(parent){
+      var font_size = parent? parent.fontSize : Layout.fontSize;
+      var measure = parent? parent.getContentMeasure(parent.flow) : Layout.getStdMeasure();
+      return this.markup? this.markup.getStaticSize(font_size, measure) : null;
+    },
+    getMarkupName : function(){
+      return this.markup? this.markup.getName() : "";
+    },
+    getMarkupClasses : function(){
+      return this.markup? this.markup.classes : [];
+    },
+    // block context
+    createBlockRoot : function(markup, stream){
+      stream = (stream === null)? null : (stream || new TokenStream(markup.getContent()));
+      return new DocumentContext({
+	markup:markup.inherit(this.markup, this),
+	stream:stream,
+	charPos:this.charPos,
+	pageNo:this.pageNo,
+	header:this.header,
+	outlineContext:this.outlineContext,
+	ahchors:this.anchors
+      });
+    },
+    createFloatedRoot : function(){
+      return new DocumentContext({
+	markup:this.markup,
+	stream:this.stream,
+	charPos:this.charPos,
+	pageNo:this.pageNo,
+	header:this.header,
+	blockContext:this.blockContext,
+	outlineContext:this.outlineContext,
+	ahchors:this.anchors
+      });
+    },
+    createInlineBlockRoot : function(markup, stream){
+      var ctx = this.createBlockRoot(markup, stream);
+      ctx.mode = "inline-block";
+      return ctx;
+    },
+    createBlockContext : function(parent){
+      this.blockContext = new BlockContext(parent);
+      return this.blockContext;
+    },
+    addBlockElement : function(element){
+      this.blockContext.addElement(element);
+      if(element instanceof Box && element.isTextLine()){
+	this.stepLocalLineNo();
+      }
+    },
+    getRestExtent : function(){
+      return this.blockContext.getRestExtent();
+    },
+    // inline context
+    createInlineRoot : function(markup, stream){
+      stream = (stream === null)? null : (stream || new TokenStream(markup.getContent()));
+      return new DocumentContext({
+	markup:markup.inherit(this.markup, this),
+	stream:stream,
+	charPos:this.charPos,
+	pageNo:this.pageNo,
+	header:this.header,
+	blockContext:this.blockContext, // inherit block context
+	outlineContext:this.outlineContext,
+	ahchors:this.anchors
+      });
+    },
+    createChildInlineRoot : function(markup, stream){
+      var ctx = this.createInlineRoot(markup, stream);
+      ctx.blockContext = null;
+      return ctx;
+    },
+    createInlineStream : function(){
+      return this.stream.createRefStream(function(token){
+	return token !== null && Token.isInline(token);
+      });
+    },
+    createInlineContext : function(parent){
+      this.inlineContext = new InlineContext(parent, this);
+      return this.inlineContext;
+    },
+    createLine : function(){
+      return this.inlineContext.createLine();
+    },
+    getInlineNextToken : function(){
+      return this.inlineContext.getNextToken();
+    },
+    getInlineMaxMeasure : function(){
+      return this.inlineContext.getMaxMeasure();
+    },
+    getInlineMaxExtent : function(){
+      return this.inlineContext.getMaxExtent();
+    },
+    getInlineMaxFontSize : function(){
+      return this.inlineContext.getMaxFontSize();
+    },
+    setLineBreak : function(){
+      this.inlineContext.setLineBreak();
+    },
+    addInlineElement : function(element){
+      this.inlineContext.addElement(element);
+    },
+    // header
     getHeader : function(){
       return this.header;
     },
@@ -6348,26 +6519,26 @@ var DocumentContext = (function(){
     getOutlineBuffer : function(root_name){
       return this.outlineContext.getOutlineBuffer(root_name);
     },
-    startSectionRoot : function(tag){
-      var type = tag.getName();
+    startSectionRoot : function(){
+      var type = this.markup.getName();
       this.outlineContext.startSectionRoot(type);
     },
-    endSectionRoot : function(tag){
-      var type = tag.getName();
+    endSectionRoot : function(){
+      var type = this.markup.getName();
       return this.outlineContext.endSectionRoot(type);
     },
-    logStartSection : function(tag){
-      var type = tag.getName();
+    logStartSection : function(){
+      var type = this.markup.getName();
       this.outlineContext.logStartSection(type, this.pageNo);
     },
-    logEndSection : function(tag){
-      var type = tag.getName();
+    logEndSection : function(){
+      var type = this.markup.getName();
       this.outlineContext.logEndSection(type);
     },
-    logSectionHeader : function(tag){
-      var type = tag.getName();
-      var rank = tag.getHeaderRank();
-      var title = tag.getContentRaw();
+    logSectionHeader : function(){
+      var type = this.markup.getName();
+      var rank = this.markup.getHeaderRank();
+      var title = this.markup.getContentRaw();
       var page_no = this.pageNo;
       var header_id = __global_header_id++;
       this.outlineContext.logSectionHeader(type, rank, title, page_no, header_id);
@@ -6602,6 +6773,18 @@ var TokenStream = Class.extend({
       this.next();
     }
   },
+  createRefStream : function(fn){
+    var start = this.pos, end = this.pos;
+    while(this.hasNext()){
+      var token = this.get();
+      if(!fn(token)){
+	this.prev();
+	break;
+      }
+      end++;
+    }
+    return new ReferenceTokenStream(this, start, end);
+  },
   skipUntil : function(fn){
     while(this.hasNext()){
       var token = this.get();
@@ -6637,6 +6820,9 @@ var TokenStream = Class.extend({
   },
   getPos : function(){
     return this.pos;
+  },
+  getBackupPos : function(){
+    return this.backupPos;
   },
   getAll : function(){
     while(!this.eof){
@@ -6731,6 +6917,28 @@ var TokenStream = Class.extend({
   }
 });
 
+var ReferenceTokenStream = TokenStream.extend({
+  init : function(stream, start, end){
+    this.tokens = stream.tokens;
+    this.lexer = stream.lexer;
+    this.stream = stream;
+    this.pos = start;
+    this.end = end;
+    this.eof = true;
+  },
+  setRefSrcPos : function(pos){
+    this.stream.setPos(pos);
+  },
+  doBuffer : function(){
+    // do nothing
+  },
+  hasNext : function(){
+    return this.pos < this.end;
+  },
+  isEnd : function(){
+    return this.pos >= this.end;
+  }
+});
 var FilteredTagStream = TokenStream.extend({
   init : function(src, fn){
     var order = 0;
@@ -6994,13 +7202,9 @@ var RubyTagStream = TokenStream.extend({
 
 
 var DocumentGenerator = (function(){
-  function DocumentGenerator(src){
-    this.context = new DocumentContext();
-    this.stream = new DocumentTagStream(src);
-    this.generator = this._createGenerator();
-    if(this.generator === null){
-      throw "DocumentGenerator::invalid document";
-    }
+  function DocumentGenerator(context){
+    this.context = context;
+    this.generator = this._createGenerator(this.context.stream);
   }
 
   DocumentGenerator.prototype = {
@@ -7022,25 +7226,22 @@ var DocumentGenerator = (function(){
     getOutlineHtml : function(root_name){
       return this.generator.getOutlineHtml(root_name);
     },
-    _parseDocType : function(tag){
-    },
     _createGenerator : function(){
-      var generator = null;
-      while(true){
-	var tag = this.stream.get();
-	if(tag === null){
-	  break;
-	}
+      while(this.context.hasNextToken()){
+	var tag = this.context.getNextToken();
 	switch(tag.getName()){
 	case "!doctype":
-	  this._parseDocType(tag);
+	  this.context.setDocumentType(tag);
 	  break;
 	case "html":
-	  generator = new HtmlGenerator(tag, this.context);
-	  break;
+	  return new HtmlGenerator(
+	    this.context.createBlockRoot(
+	      tag, new HtmlTagStream(tag.getContentRaw())
+	    )
+	  );
 	}
       }
-      return generator;
+      throw "invalid document:<html> not found";
     }
   };
 
@@ -7049,14 +7250,9 @@ var DocumentGenerator = (function(){
 
 
 var HtmlGenerator = (function(){
-  function HtmlGenerator(markup, context){
-    this.markup = markup;
-    this.context = context || new DocumentContext();
-    this.stream = this._createStream();
+  function HtmlGenerator(context){
+    this.context = context;
     this.generator = this._getGenerator();
-    if(this.generator === null){
-      throw "HtmlGenerator::invalid html";
-    }
   }
 
   HtmlGenerator.prototype = {
@@ -7072,68 +7268,46 @@ var HtmlGenerator = (function(){
     getOutlineHtml : function(root_name){
       return this.generator.getOutlineHtml(root_name);
     },
-    _createStream : function(){
-      return new HtmlTagStream(this.markup.getContentRaw());
-    },
     _getGenerator : function(){
-      var generator = null;
-      while(true){
-	var tag = this.stream.get();
-	if(tag === null){
-	  break;
-	}
+      while(this.context.hasNextToken()){
+	var tag = this.context.getNextToken();
 	switch(tag.getName()){
 	case "head":
-	  this._parseHead(tag.getContentRaw());
+	  this._parseHead(this.context.getHeader(), tag.getContentRaw());
 	  break;
 	case "body":
-	  generator = new BodyBlockTreeGenerator(tag, this.context);
-	  break;
+	  return new BodyBlockTreeGenerator(
+	    this.context.createBlockRoot({
+	      markup:tag,
+	      stream:(new TokenStream(tag.getContentRaw()))
+	    })
+	  );
 	}
       }
-      return generator;
+      throw "invalid html:<body> not found";
     },
-    _parseHead : function(content){
+    _parseHead : function(header, content){
       var stream = new HeadTagStream(content);
-      var header = this.context.getHeader();
-      while(true){
+      while(stream.hasNext()){
 	var tag = stream.get();
-	if(tag === null){
-	  break;
-	}
 	switch(tag.getName()){
 	case "title":
-	  this._parseTitle(header, tag);
+	  header.setTitle(tag.getContentRaw());
 	  break;
 	case "meta":
-	  this._parseMeta(header, tag);
+	  header.addMeta(tag);
 	  break;
 	case "link":
-	  this._parseLink(header, tag);
+	  header.addLink(tag);
 	  break;
 	case "style":
-	  this._parseStyle(header, tag);
+	  header.addStyle(tag);
 	  break;
 	case "script":
-	  this._parseScript(header, tag);
+	  header.addScript(tag);
 	  break;
 	}
       }
-    },
-    _parseTitle : function(header, tag){
-      header.setTitle(tag.getContentRaw());
-    },
-    _parseMeta : function(header, tag){
-      header.addMeta(tag);
-    },
-    _parseLink : function(header, tag){
-      header.addLink(tag);
-    },
-    _parseStyle : function(header, tag){
-      header.addStyle(tag);
-    },
-    _parseScript : function(header, tag){
-      header.addScript(tag);
     }
   };
 
@@ -7142,18 +7316,11 @@ var HtmlGenerator = (function(){
 
 
 var ElementGenerator = Class.extend({
-  init : function(markup, context){
-    this.markup = markup;
+  init : function(context){
     this.context = context;
   },
   hasNext : function(){
     return false;
-  },
-  backup : function(){
-  },
-  commit : function(){
-  },
-  rollback : function(){
   },
   // called when box is created, but no style is not loaded.
   _onReadyBox : function(box, parent){
@@ -7161,41 +7328,142 @@ var ElementGenerator = Class.extend({
   // called when box is created, and std style is already loaded.
   _onCreateBox : function(box, parent){
   },
-  _getMarkupStaticSize : function(parent){
-    var font_size = parent? parent.fontSize : Layout.fontSize;
-    var measure = parent? parent.getContentMeasure(parent.flow) : Layout.getStdMeasure();
-    return this.markup.getStaticSize(font_size, measure);
+  _isTextLine : function(element){
+    return element instanceof Box && element.isTextLine();
   },
   _yieldStaticElement : function(parent, tag){
+    var generator = this._createStaticGenerator(parent, tag);
+    return generator.yield(parent);
+  },
+  _createStaticGenerator : function(parent, tag){
     switch(tag.getName()){
     case "img":
-      return (new ImageGenerator(tag, this.context)).yield(parent);
+      return new ImageGenerator(this.context.createBlockRoot(tag, null));
     case "ibox":
-      return (new InlineBoxGenerator(tag, this.context)).yield(parent);
+      return new InlineBoxGenerator(this.context.createBlockRoot(tag, null));
     case "div":
       if(tag.hasFlow()){
-	return (new InlinePageGenerator(tag, this.context)).yield(parent);
+	return new InlinePageGenerator(this.context.createBlockRoot(tag));
       }
-      return (new InlineBoxGenerator(tag, this.context)).yield(parent);
+      return new InlineBoxGenerator(this.context.createBlockRoot(tag, null));
     default:
-      return (new InlinePageGenerator(tag, this.context)).yield(parent);
+      return new InlinePageGenerator(this.context.createBlockRoot(tag));
     }
   },
+  _createInlineTreeGenerator : function(){
+    var markup = this.context.markup;
+    var stream = this.context.createInlineStream();
+    return new InlineTreeGenerator(this.context.createInlineRoot(markup, stream));
+  },
+  _createChildInlineTreeGenerator : function(tag){
+    var line_no = this.context.getLocalLineNo();
+    switch(tag.getName()){
+    case "ruby":
+      return new RubyGenerator(this.context.createChildInlineRoot(tag, new RubyTagStream(tag)), line_no);
+    case "a":
+      return new LinkGenerator(this.context.createChildInlineRoot(tag), line_no);
+    case "first-line":
+      return new FirstLineGenerator(this.context.createChildInlineRoot(tag), line_no);
+    default:
+      return new ChildInlineTreeGenerator(this.context.createChildInlineRoot(tag), line_no);
+    }
+  },
+  _createInlineBlockGenerator : function(tag){
+    return new InlineBlockGenerator(this.context.createInlineBlockRoot(tag));
+  },
+  _createChildBlockTreeGenerator : function(parent, tag){
+    switch(tag.getName()){
+    case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
+      return new HeaderGenerator(this.context.createBlockRoot(tag));
+    case "section": case "article": case "nav": case "aside":
+      return new SectionContentGenerator(this.context.createBlockRoot(tag));
+    case "details": case "blockquote": case "figure": case "fieldset":
+      return new SectionRootGenerator(this.context.createBlockRoot(tag));
+    case "table":
+      return new TableGenerator(this.context.createBlockRoot(tag, new TableTagStream(tag)));
+    case "tbody": case "thead": case "tfoot":
+      return new TableRowGroupGenerator(this.context.createBlockRoot(tag, new DirectTokenStream(tag.tableChilds)));
+    case "dl":
+      return new ChildBlockTreeGenerator(this.context.createBlockRoot(tag, new DefListTagStream(tag.getContent())));
+    case "ul": case "ol":
+      return new ListGenerator(this.context.createBlockRoot(tag,new ListTagStream(tag.getContent())));
+    case "hr":
+      return new HrGenerator(this.context);
+    case "tr":
+      return this._createTableRowGenerator(parent, tag);
+    case "li":
+      return this._createListItemGenerator(parent, tag);
+    default:
+      return new ChildBlockTreeGenerator(this.context.createBlockRoot(tag));
+    }
+  },
+  _createTableRowGenerator : function(parent, tag){
+    var partition = parent.partition.getPartition(tag.tableChilds.length);
+    var context2 = this.context.createBlockRoot(tag); // tr
+    return new ParallelGenerator(List.map(tag.tableChilds, function(td){
+      return new ParaChildGenerator(context2.createBlockRoot(td)); // tr -> td
+    }), partition, context2);
+  },
+  _createListItemGenerator : function(parent, tag){
+    var list_style = parent.listStyle || null;
+    if(list_style === null){
+      return new ChildBlockTreeGenerator(this.context.createBlockRoot(tag));
+    }
+    if(list_style.isInside()){
+      return this._createInsideListItemGenerator(parent, tag);
+    }
+    return this._createOutsideListItemGenerator(parent, tag);
+  },
+  _createInsideListItemGenerator : function(parent, tag){
+    var marker = parent.listStyle.getMarkerHtml(tag.order + 1);
+    var content = Html.tagWrap("span", marker, {
+      "class":"nehan-li-marker"
+    }) + Const.space + tag.getContent();
+
+    return new ChildBlockTreeGenerator(this.context.createBlockRoot(tag, new TokenStream(content)));
+  },
+  _createOutsideListItemGenerator : function(parent, tag){
+    var context2 = this.context.createBlockRoot(tag);
+    var marker = parent.listStyle.getMarkerHtml(tag.order + 1);
+    var markup_marker = new Tag("<li-marker>", marker);
+    var markup_body = new Tag("<li-body>", tag.getContent());
+    return new ParallelGenerator([
+      new ParaChildGenerator(context2.createBlockRoot(markup_marker)),
+      new ParaChildGenerator(context2.createBlockRoot(markup_body))
+    ], parent.partition, context2);
+  },
+  _getBoxSize : function(parent){
+    return this.context.getMarkupStaticSize(parent) || parent.getRestSize();
+  },
+  _getLineSize : function(parent){
+    var measure = parent.getContentMeasure();
+    var extent = parent.getContentExtent();
+    return parent.flow.getBoxSize(measure, extent);
+  },
   _getBoxType : function(){
-    return this.markup.getName();
+    return this.context.getMarkupName();
   },
   _setBoxClasses : function(box, parent){
-    List.iter(this.markup.classes, function(klass){
+    List.iter(this.context.getMarkupClasses(), function(klass){
       box.addClass(klass);
     });
   },
   _setBoxStyle : function(box, parent){
-    BoxStyle.set(this.markup, box, parent);
+    if(this.context.markup){
+      BoxStyle.set(this.context.markup, box, parent);
+    }
+  },
+  _createLine : function(parent){
+    var size = this._getLineSize(parent);
+    var line = Layout.createTextLine(size, parent);
+    line.markup = this.context.markup;
+    line.lineNo = this.context.getLocalLineNo();
+    return line;
   },
   _createBox : function(size, parent){
     var box_type = this._getBoxType();
     var box = Layout.createBox(size, parent, box_type);
-    box.markup = this.markup;
+    box.markup = this.context.markup;
     this._onReadyBox(box, parent);
     this._setBoxClasses(box, parent);
     this._setBoxStyle(box, parent);
@@ -7207,7 +7475,7 @@ var ElementGenerator = Class.extend({
 
 var StaticBlockGenerator = ElementGenerator.extend({
   _getBoxSize : function(parent){
-    return this._getMarkupStaticSize(parent);
+    return this.context.getMarkupStaticSize(parent);
   },
   _createBox : function(size, parent){
     var box = this._super(size, parent);
@@ -7217,10 +7485,10 @@ var StaticBlockGenerator = ElementGenerator.extend({
   yield : function(parent){
     var size = this._getBoxSize(parent);
     var box = this._createBox(size, parent);
-    if(this.markup.isPush()){
+    if(this.context.markup.isPush()){
       box.backward = true;
     }
-    if(this.markup.isPull()){
+    if(this.context.markup.isPull()){
       box.forward = true;
     }
     // get rest size without edge of box.
@@ -7239,6 +7507,10 @@ var StaticBlockGenerator = ElementGenerator.extend({
     var root_page_size = Layout.getStdPageSize();
     var reduced_size = box.size.resizeWithin(parent.flow, rest_size);
 
+    box.size = reduced_size;
+    return box;
+
+    /*
     // use reduced size if
     // 1. even root size of page can't include this box
     // 2. or reduced box size is within Config.minBlockScaleDownRate of original
@@ -7248,6 +7520,7 @@ var StaticBlockGenerator = ElementGenerator.extend({
       return box;
     }
     return Exceptions.RETRY;
+    */
   }
 });
 
@@ -7257,14 +7530,14 @@ var InlineBoxGenerator = StaticBlockGenerator.extend({
     return "ibox";
   },
   _onCreateBox : function(box, parent){
-    box.content = this.markup.getContentRaw();
+    box.content = this.context.markup.getContentRaw();
     box.css.overflow = "hidden";
   }
 });
 
 var ImageGenerator = StaticBlockGenerator.extend({
   _onCreateBox : function(box, parent){
-    box.src = this.markup.getTagAttr("src");
+    box.src = this.context.markup.getTagAttr("src");
   }
 });
 
@@ -7280,126 +7553,84 @@ var HrGenerator = ElementGenerator.extend({
   }
 });
 
-var InlineTreeContext = (function(){
-  function InlineTreeContext(line, markup, stream, context){
+var InlineContext = (function(){
+  function InlineContext(line, context){
     this.line = line;
-    this.markup = markup;
-    this.stream = stream;
     this.context = context;
-    this.lineStartPos = this.stream.getPos();
-    this.textIndent = stream.isHead()? (line.textIndent || 0) : 0;
+    this.stream = context.stream;
+    this.lineStartPos = context.getStreamPos();
+    this.textIndent = context.isStreamHead()? (line.textIndent || 0) : 0;
     this.maxFontSize = 0;
     this.maxExtent = 0;
     this.maxMeasure = line.getContentMeasure() - this.textIndent;
+    this.lineMeasure = line.getContentMeasure();
     this.curMeasure = 0;
-    this.lineMeasure = line.getContentMeasure() - this.textIndent;
-    this.startTokens = [];
-    this.lineTokens = [];
-    this.endTokens = [];
-    this.lineBreak = false;
     this.charCount = 0;
+    this.pullTokens = [];
+    this.lineTokens = [];
+    this.pushTokens = [];
+    this.lineBreak = false;
     this.lastToken = null;
     this.prevText = null;
     this.lastText = null;
   }
 
-  InlineTreeContext.prototype = {
-    getElementExtent : function(element){
-      if(Token.isText(element)){
-	if((Token.isChar(element) || Token.isTcy(element)) && this.line.textEmpha){
-	  return this.line.textEmpha.getExtent(this.line.fontSize);
+  InlineContext.prototype = {
+    updateMaxMeasure : function(measure){
+      this.maxMeasure = measure - this.textIndent;
+      this.lineMeasure = measure;
+    },
+    addElement : function(element){
+      var advance = this._getElementAdvance(element);
+      if(!this._canContain(element, advance)){
+	if(advance > 0 && this.curMeasure === 0){
+	  throw "LayoutError"
 	}
-	return this.line.fontSize;
+	throw "OverflowInline";
       }
-      if(element instanceof Ruby){
-	return element.getExtent(this.line.fontSize);
+      var font_size = this._getElementFontSize(element);
+      if(font_size > this.maxFontSize){
+	this.maxFontSize = font_size;
       }
-      return element.getBoxExtent(this.getLineFlow());
-    },
-    getElementFontSize : function(element){
-      return (element instanceof Box)? element.fontSize : this.line.fontSize;
-    },
-    getElementAdvance : function(element){
-      if(Token.isText(element)){
-	return element.getAdvance(this.getLineFlow(), this.getLetterSpacing());
+      var extent = this._getElementExtent(element);
+      if(extent > this.maxExtent){
+	this.maxExtent = extent;
       }
-      if(element instanceof Ruby){
-	return element.getAdvance(this.getLineFlow());
+      if(element.getCharCount){
+	this.charCount += element.getCharCount();
       }
-      return element.getBoxMeasure(this.getLineFlow());
-    },
-    getPrevStreamPos : function(){
-      return Math.max(0, this.stream.getPos() - 1);
-    },
-    getFontSize : function(){
-      return this.line.fontSize;
-    },
-    getMaxFontSize : function(){
-      return this.maxFontSize;
-    },
-    getMaxExtent : function(){
-      return this.maxExtent;
-    },
-    getLineFlow : function(){
-      return this.line.flow;
-    },
-    getLetterSpacing : function(){
-      return this.line.letterSpacing || 0;
-    },
-    _isJustifyElement : function(element){
-      if(element instanceof Char){
-	return true;
+      this._pushElement(element);
+      if(advance > 0){
+	this.curMeasure += advance;
       }
-      if(element instanceof Ruby && this.curMeasure > 0){
-	return true;
+      if(this.curMeasure === this.maxMeasure){
+	throw "FinishInline";
       }
-      return false;
     },
-    canContain : function(element, advance){
-      // space for justify is required for justify target.
-      if(this.line.isJustifyTarget()){
-	return this.curMeasure + advance + this.line.fontSize <= this.maxMeasure;
+    setLineBreak : function(){
+      this.lastText = null;
+      this.lineBreak = true;
+    },
+    createLine : function(){
+      if(this.curMeasure === 0){
+	return this._createEmptyLine();
       }
-      return this.curMeasure + advance <= this.maxMeasure;
-    },
-    isPreLine : function(){
-      return this.line._type === "pre";
-    },
-    isTextBold : function(){
-      return this.line.isTextBold();
-    },
-    isEmptyText : function(){
-      return this.lineTokens.length === 0;
-    },
-    isOverWithoutLineBreak : function(){
-      return !this.lineBreak && (this.lineTokens.length > 0);
-    },
-    isLineStart : function(){
-      return this.stream.pos == this.lineStartPos;
-    },
-    pushBackToken : function(){
-      this.stream.prev();
-    },
-    findFirstText : function(){
-      return this.stream.findTextNext(this.lineStartPos);
-    },
-    skipToken : function(){
-      this.stream.next();
+      // if overflow measure without line-break, try to justify.
+      if(this._isOverWithoutLineBreak()){
+	this._justify(this.lastToken);
+      }
+      return this._createTextLine();
     },
     getNextToken : function(){
       var token = this.stream.get();
 
-      // skip head half space if 1 and 2.
-      // 1. first token of line is a half space.
+      // skip head half space when
+      // 1. first token of line is a half space and
       // 2. next text token is a word.
-      if(token){
-	if(Token.isChar(token) && token.isHalfSpaceChar() && this.isLineStart()){
-	  var next = this.findFirstText();
-	  if(next && Token.isWord(next)){
-	    token = this.stream.get();
-	  }
-	} else if(Token.isTag(token) && this.markup){
-	  token.inherit(this.markup, this.context);
+      if(token && this._isLineStart() && Token.isChar(token) && token.isHalfSpaceChar()){
+	var next = this.stream.findTextNext(this.lineStartPos);
+	if(next && Token.isWord(next)){
+	  token = this.stream.get();
 	}
       }
       this.lastToken = token;
@@ -7410,89 +7641,65 @@ var InlineTreeContext = (function(){
 
       return token;
     },
-    getTextTokenLength : function(){
-      return this.lineTokens.length;
-    },
     getRestMeasure : function(){
       return this.line.getContentMeasure() - this.curMeasure;
     },
     getMaxMeasure : function(){
       return this.maxMeasure;
     },
-    addStyle : function(tag){
-      this.context.addStyle(tag);
+    getMaxFontSize : function(){
+      return this.maxFontSize;
     },
-    addElement : function(element){
-      var advance = this.getElementAdvance(element);
-      if(!this.canContain(element, advance)){
-	// even if one element can't be included, it's layout error and skip it.
-	if(advance > 0 && this.curMeasure === 0){
-	  throw "LayoutError";
+    getMaxExtent : function(){
+      return this.maxExtent;
+    },
+    _getElementExtent : function(element){
+      if(Token.isText(element)){
+	if((Token.isChar(element) || Token.isTcy(element)) && this.line.textEmpha){
+	  return this.line.textEmpha.getExtent(this.line.fontSize);
 	}
-	throw "OverflowInline";
+	return this.line.fontSize;
       }
-      var font_size = this.getElementFontSize(element);
-      if(font_size > this.maxFontSize){
-	this._setMaxFontSize(font_size);
+      if(element instanceof Ruby){
+	return element.getExtent(this.line.fontSize);
       }
-      var extent = this.getElementExtent(element);
-      if(extent > this.maxExtent){
-	this._setMaxExtent(extent);
-      }
-      if(Token.isTag(element)){
-	this._addTag(element);
-      } else if(element instanceof Ruby){
-	this._addRuby(element);
-      } else if (element instanceof Box){
-	if(element.logicalFloat){
-	  this._setLogicalFloat(element, element.logicalFloat);
-	}
-	if(element._type === "text-line"){
-	  this._addTextLine(element);
-	} else {
-	  this._addInlineBlock(element);
-	}
-      } else {
-	this._addText(element);
-      }
-      if(advance > 0){
-	this._addAdvance(advance);
-      }
-      if(this.curMeasure === this.maxMeasure){
-	throw "FinishInline";
-      }
+      return element.getBoxExtent(this.line.flow);
     },
-    _setLogicalFloat : function(element, logical_float){
-      switch(logical_float){
-      case "start":
-	element.forward = true;
-	break;
-      case "end":
-	element.backward = true;
-	break;
+    _getElementFontSize : function(element){
+      return (element instanceof Box)? element.fontSize : this.line.fontSize;
+    },
+    _getElementAdvance : function(element){
+      if(Token.isText(element)){
+	return element.getAdvance(this.line.flow, this.line.letterSpacing || 0);
       }
-    },
-    setAnchor : function(anchor_name){
-      this.context.setAnchor(anchor_name);
-    },
-    setLineBreak : function(){
-      this.lastText = null;
-      this.lineBreak = true;
-    },
-    createInlineRoot : function(){
-      return this.context.createInlineRoot();
-    },
-    createLine : function(){
-      if(this.curMeasure === 0){
-	return this._createEmptyLine();
+      if(element instanceof Ruby){
+	return element.getAdvance(this.line.flow);
       }
-      // if overflow measure without line-break, try to justify.
-      if(this.isOverWithoutLineBreak()){
-	this.justify(this.lastToken);
-      }
-      return this._createTextLine();
+      return element.getBoxMeasure(this.line.flow);
     },
-    justify : function(last_token){
+    _isJustifyElement : function(element){
+      if(element instanceof Char){
+	return true;
+      }
+      if(element instanceof Ruby && this.curMeasure > 0){
+	return true;
+      }
+      return false;
+    },
+    _canContain : function(element, advance){
+      // space for justify is required for justify target.
+      if(this.line.isJustifyTarget()){
+	return this.curMeasure + advance + this.line.fontSize <= this.maxMeasure;
+      }
+      return this.curMeasure + advance <= this.maxMeasure;
+    },
+    _isOverWithoutLineBreak : function(){
+      return !this.lineBreak && (this.lineTokens.length > 0);
+    },
+    _isLineStart : function(){
+      return this.stream.getPos() == this.lineStartPos;
+    },
+    _justify : function(last_token){
       var head_token = last_token;
       var tail_token = this.stream.findTextPrev();
       var backup_pos = this.stream.getPos();
@@ -7512,15 +7719,6 @@ var InlineTreeContext = (function(){
       if(tail_token && Token.isChar(tail_token) && tail_token.isTailNg()){
 	this.lineTokens = this._justifyTail(tail_token);
       }
-    },
-    _addAdvance : function(advance){
-      this.curMeasure += advance;
-    },
-    _setMaxExtent : function(extent){
-      this.maxExtent = extent;
-    },
-    _setMaxFontSize : function(max_font_size){
-      this.maxFontSize = max_font_size;
     },
     _setKerning : function(token){
       this.prevText = this.lastText;
@@ -7565,36 +7763,21 @@ var InlineTreeContext = (function(){
       return 0.5;
     },
     _pushElement : function(element){
-      if(element.forward){
-	this.startTokens.push(element);
-      } else if(element.backward){
-	this.endTokens.push(element);
-      } else {
+      var logical_float = element.logicalFloat || "";
+      switch(logical_float){
+      case "start":
+	this.pullTokens.push(element);
+	break;
+      case "end":
+	this.pushTokens.push(element);
+	break;
+      default:
 	this.lineTokens.push(element);
+	break;
       }
     },
     _getLineTokens : function(){
-      return this.startTokens.concat(this.lineTokens).concat(this.endTokens);
-    },
-    _addRuby : function(element){
-      this._pushElement(element);
-    },
-    _addTag : function(element){
-      this._pushElement(element);
-    },
-    _addInlineBlock : function(element){
-      this._pushElement(element);
-    },
-    _addTextLine : function(element){
-      this._pushElement(element);
-      this.charCount += element.getCharCount();
-    },
-    _addText : function(element){
-      // text element
-      this._pushElement(element);
-
-      // count up char count of line
-      this.charCount += element.getCharCount();
+      return this.pullTokens.concat(this.lineTokens).concat(this.pushTokens);
     },
     // fix line that is started with wrong text.
     _justifyHead : function(head_token){
@@ -7705,95 +7888,255 @@ var InlineTreeContext = (function(){
     }
   };
 
-  return InlineTreeContext;
+  return InlineContext;
 })();
 
 
-var InlineTreeGenerator = ElementGenerator.extend({
-  init : function(markup, stream, context){
-    this.markup = markup;
-    this.stream = stream;
-    this.context = context;
-    this._terminate = false;
+var BlockContext = (function(){
+  function BlockContext(page){
+    this.page = page;
+    this.curExtent = 0;
+    this.maxExtent = page.getContentExtent();
+  }
+
+  BlockContext.prototype = {
+    getRestExtent : function(){
+      return this.maxExtent - this.curExtent;
+    },
+    addElement : function(element){
+      var extent = element.getBoxExtent(this.page.flow);
+      /*
+      if(element instanceof Box && !element.isTextLine() && extent <= 0){
+	throw "EmptyBlock";
+      }
+      */
+      if(element instanceof Box && !element.isTextLine() && extent <= 0){
+	element.pageBreakAfter = true;
+      }
+      if(this.curExtent + extent > this.maxExtent){
+	throw "OverflowBlock";
+      }
+      this.page.addChildBlock(element);
+      this.curExtent += extent;
+      if(this.curExtent === this.maxExtent){
+	throw "FinishBlock";
+      }
+    }
+  };
+  
+  return BlockContext;
+})();
+
+
+var TreeGenerator = ElementGenerator.extend({
+  init : function(context){
+    this._super(context);
     this.generator = null;
-    this.lineNo = 0;
   },
   hasNext : function(){
-    if(this._terminate){
-      return false;
-    }
     if(this.generator && this.generator.hasNext()){
       return true;
     }
-    return this.stream.hasNext();
+    return this.context.hasNextToken();
   },
-  backup : function(){
-    this.stream.backup();
+  getCurGenerator : function(){
+    if(this.generator && this.generator.hasNext()){
+      return this.generator;
+    }
+    return null;
   },
-  commit : function(){
-    this.lineNo++;
+  // called when page box is fully filled.
+  _onCompleteBlock : function(page){
   },
-  // this rollback is called from parent generator when layout overflows by 'block level'.
-  rollback : function(){
-    this.stream.rollback();
-    var rollback_pos = this.stream.getPos();
+  _onLastBlock : function(page){
+  },
+  // if size is not defined, rest size of parent is used.
+  // if parent is null, root page is generated.
+  yield : function(parent, size){
+    var page_box, page_size;
+    page_size = size || this._getBoxSize(parent);
+    page_box = this._createBox(page_size, parent);
+    return this._yieldElementsTo(page_box);
+  },
+  // fill page with child page elements.
+  _yieldElementsTo : function(page){
+    this.context.createBlockContext(page);
+    /*
+    if(this.generator && this.generator instanceof InlineTreeGenerator){
+      this.generator.context.blockContext = this.context.blockContext;
+    }
+    */
     if(this.generator){
-      var cgen_pos = this.generator.getParentPos();
-      var cgen_line_no = this.generator.getParentLineNo();
-      if(rollback_pos < cgen_pos){
-	this.generator = null;
-      } else if(this.generator.hasNext() || (cgen_pos + 1 == rollback_pos && cgen_line_no == this.lineNo)){
-	// still un-yielded child-gen,
-	// or child-gen that is previous of backupPos and line no of child-gen is equal to backupPos token.
-	this.generator.rollback();
+      this.generator.context.blockContext = this.context.blockContext;
+    }
+
+    while(true){
+      var element = this._yieldElement(page);
+      if(typeof element === "number"){ // exception
+	if(element == Exceptions.IGNORE){
+	  continue;
+	} else if(element == Exceptions.BREAK){
+	  page.breakAfter = true;
+	  break;
+	} else {
+	  break;
+	}
+      }
+      try {
+	if(element.breakBefore){
+	  page.breakAfter = true;
+	  break;
+	}
+	this.context.addBlockElement(element);
+	if(element.breakAfter){
+	  page.breakAfter = true;
+	  break;
+	}
+      } catch(e){
+	break;
       }
     }
+    if(!this.context.isFirstLocalPage()){
+      page.clearBorderBefore();
+    }
+    if(!this.hasNext()){
+      this._onLastBlock(page);
+    } else {
+      page.clearBorderAfter();
+    }
+    this._onCompleteBlock(page);
+
+    // if content is not empty, increment local page no.
+    if(page.getBoxExtent() > 0){
+      this.context.stepLocalPageNo();
+    }
+    return page;
   },
-  _getLineSize : function(parent){
-    var measure = parent.getContentMeasure();
-    var extent = parent.getContentExtent();
-    return parent.flow.getBoxSize(measure, extent);
+  _yieldElement : function(parent){
+    if(this.generator && this.generator.hasNext()){
+      return this.generator.yield(parent);
+    }
+    this.generator = null;
+    var token = this.context.getNextToken();
+    if(token === null){
+      return Exceptions.BUFFER_END;
+    }
+    if(Token.isChar(token) && token.isNewLineChar()){
+      return Exceptions.IGNORE;
+    }
+    if(Token.isTag(token) && token.isPageBreakTag()){
+      return Exceptions.PAGE_BREAK;
+    }
+    if(Token.isTag(token)){
+      token.inherit(this.context.markup, this.context);
+    }
+    if(Token.isTag(token) && token.hasStaticSize() && token.isBlock()){
+      var static_element = this._yieldStaticElement(parent, token);
+      if(token.getCssAttr("float") !== null){
+	return this._yieldFloatedBlock(parent, static_element);
+      }
+      return static_element;
+    }
+    if(Token.isText(token) || Token.isInline(token)){
+      this.context.pushBackToken();
+      this.generator = new InlineTreeGenerator(
+	this.context.createInlineRoot(this.context.markup, this.context.createInlineStream())
+      );
+      return this.generator.yield(parent);
+    }
+    // now token is not text, it's a tag object.
+    if(token.isInline() || token.isInlineBlock()){
+      this.generator = this._createChildInlineTreeGenerator(token);
+      return this.generator.yield(parent);
+    }
+    // if different flow is defined in this block tag,
+    // yield it as single inline page with rest size of current parent.
+    if(token.hasFlow() && token.getCssAttr("flow") != parent.getFlowName()){
+      var inline_size = parent.getRestSize();
+      var generator = new InlinePageGenerator(this.context.createBlockRoot(token));
+      return generator.yield(parent, inline_size);
+    }
+    this.generator = this._createChildBlockTreeGenerator(parent, token);
+    return this.generator.yield(parent);
   },
-  _createLine  : function(parent){
-    var size = this._getLineSize(parent);
-    var line = Layout.createTextLine(size, parent);
-    line.markup = this.markup;
-    line.lineNo = this.lineNo;
-    return line;
+  _yieldFloatedBlock : function(parent, floated_box, tag){
+    var generator = new FloatedBlockTreeGenerator(this.context.createFloatedRoot(), floated_box);
+    var block = generator.yield(parent);
+    this.generator = generator.getCurGenerator(); // inherit generator of aligned area
+    if(this.generator){
+      this.generator.context.blockContext = this.context.blockContext; // and inherit parent block context
+    }
+    return block;
+  }
+});
+
+var InlineTreeGenerator = TreeGenerator.extend({
+  init : function(context){
+    this._super(context);
+    this.cachedLine = null;
+  },
+  getParentPos : function(){
+    return this.context.markup.pos;
+  },
+  hasNext : function(){
+    if(this.cachedElement || this.cachedLine){
+      return true;
+    }
+    return this._super();
+  },
+  // called when line box is fully filled.
+  _onCompleteLine : function(line){
+    line.setMaxExtent(this.context.getInlineMaxExtent());
+    line.setMaxFontSize(this.context.getInlineMaxFontSize());
+  },
+  _onLastLine : function(line){
   },
   yield : function(parent){
-    var line = this._createLine(parent);
-    return this._yield(line);
+    var line;
+    if(this.cachedLine){
+      if(this.cachedLine.parent.getContentMeasure() == parent.getContentMeasure()){
+	return this._yieldCachedLine(parent);
+      }
+      this.context.inlineContext.updateMaxMeasure(parent.getContentMeasure());
+      return this._yieldInlinesTo(this._yieldCachedLine(parent));
+    }
+    line = this._createLine(parent);
+    this.context.createInlineContext(line);
+    return this._yieldInlinesTo(line);
   },
-  _yield : function(line){
-    var ctx = new InlineTreeContext(line, this.markup, this.stream, this.context);
-
-    this.backup();
+  _yieldCachedElement : function(parent){
+    var ret = this.cachedElement;
+    this.cachedElement = null;
+    return ret;
+  },
+  _yieldCachedLine : function(parent){
+    var line = this.cachedLine;
+    line.parent = parent;
+    line.lineNo = this.context.getLocalLineNo();
+    this.cachedLine = null;
+    return line;
+  },
+  _yieldInlinesTo : function(line){
     while(true){
-      var element = this._yieldElement(ctx);
-      if(typeof element === "number"){
-	if(element == Exceptions.BUFFER_END){
-	  ctx.setLineBreak();
-	  break;
-	} else if(element == Exceptions.LINE_BREAK){
-	  ctx.setLineBreak();
-	  break;
-	} else if(element == Exceptions.IGNORE){
+      var element = this._yieldInlineElement(line);
+      if(typeof element === "number"){ // exceptions
+	if(element == Exceptions.IGNORE){
 	  continue;
 	} else {
-	  alert("unexpected inline-exception:" + Exceptions.toString(element));
+	  this.context.setLineBreak();
+	  if(element === Exceptions.FORCE_TERMINATE && this.context.stream instanceof ReferenceTokenStream){
+	    this.context.stream.setRefSrcPos(Math.max(0, this.context.getStreamPos() - 1));
+	  }
 	  break;
 	}
       }
 
       try {
-	ctx.addElement(element);
+	this.context.addInlineElement(element);
       } catch(e){
 	if(e === "OverflowInline"){
-	  if(element instanceof Box || element instanceof Ruby){
-	    this.generator.rollback();
-	  } else {
-	    ctx.pushBackToken();
+	  if(!Token.isChar(element) || !element.isHeadNg()){
+	    this.cachedElement = element;
 	  }
 	}
 	break;
@@ -7801,28 +8144,36 @@ var InlineTreeGenerator = ElementGenerator.extend({
 
       // if devided word, line break and parse same token again.
       if(element instanceof Word && element.isDevided()){
-	ctx.pushBackToken();
+	this.context.pushBackToken();
 	break;
       }
     } // while(true)
 
-    line = ctx.createLine();
-    this._onCompleteTree(ctx, line);
+    line = this.context.createLine();
+    this._onCompleteLine(line);
+
+    if(!this.hasNext()){
+      this._onLastLine(line);
+    }
+
+    if(this.context.blockContext && this.context.getRestExtent() < line.getBoxExtent(parent.flow)){
+      this.cachedLine = line;
+      return Exceptions.BREAK;
+    }
     return line;
   },
-  _onCompleteTree : function(ctx, line){
-    line.setMaxExtent(ctx.getMaxExtent());
-    line.setMaxFontSize(ctx.getMaxFontSize());
-  },
-  _yieldElement : function(ctx){
-    if(this.generator && this.generator.hasNext()){
-      return this.generator.yield(ctx.line);
+  _yieldInlineElement : function(line){
+    if(this.cachedElement){
+      return this._yieldCachedElement(line);
     }
-    //this.generator = null;
-    var token = ctx.getNextToken();
-    return this._yieldToken(ctx, token);
+    if(this.generator && this.generator.hasNext()){
+      return this.generator.yield(line);
+    }
+    this.generator = null;
+    var token = this.context.getInlineNextToken();
+    return this._yieldInlineToken(line, token);
   },
-  _yieldToken : function(ctx, token){
+  _yieldInlineToken : function(line, token){
     if(token === null){
       return Exceptions.BUFFER_END;
     }
@@ -7833,129 +8184,84 @@ var InlineTreeGenerator = ElementGenerator.extend({
     if(Token.isChar(token) && token.isNewLineChar()){
 
       // if pre, treat CRLF as line break
-      if(ctx.isPreLine()){
+      if(line.isPreLine()){
 	return Exceptions.LINE_BREAK;
       }
       // others, just ignore
       return Exceptions.IGNORE;
     }
     if(Token.isText(token)){
-      return this._yieldText(ctx, token);
+      return this._yieldText(line, token);
     }
-    if(Token.isTag(token) && token.getName() === "br"){
+    var tag_name = token.getName();
+    if(tag_name === "br"){
       return Exceptions.LINE_BREAK;
     }
-    // if block element, break line and force terminate generator
+    if(tag_name === "script"){
+      this.context.addScript(token);
+      return Exceptions.IGNORE;
+    }
+    if(tag_name === "style"){
+      this.context.addStyle(token);
+      return Exceptions.IGNORE;
+    }
+    if(tag_name === "first-letter"){
+      token.inherit(this.context.getMarkup());
+    }
+    // if block element occured, force terminate generator
     if(token.isBlock()){
-      ctx.pushBackToken(); // push back this token(this block is handled by parent generator).
-      this._terminate = true; // force terminate
-      return Exceptions.LINE_BREAK;
+      this._terminate = true;
+      return Exceptions.FORCE_TERMINATE;
     }
     // token is static size tag
     if(token.hasStaticSize()){
-      return this._yieldStaticElement(ctx.line, token);
+      return this._yieldStaticElement(line, token);
     }
     // token is inline-block tag
     if(token.isInlineBlock()){
-      this.generator = new InlineBlockGenerator(token, this.context);
-      return this.generator.yield(ctx.line);
+      this.generator = this._createInlineBlockGenerator(token);
+      return this.generator.yield(line);
     }
-    // token is other inline tag
-    return this._yieldInlineTag(ctx, token);
+    if(token.isSingleTag()){
+      return token;
+    }
+    this.generator = this._createChildInlineTreeGenerator(token, this.context.getLocalLineNo());
+    return this.generator.yield(line);
   },
-  _yieldText : function(ctx, text){
-    if(!text.hasMetrics()){
-      text.setMetrics(ctx.getLineFlow(), ctx.getFontSize(), ctx.isTextBold());
+  _yieldText : function(line, text){
+    // always set metrics for first-line, because style of first-line tag changes whether it is first-line or not.
+    if(this.context.getMarkupName() === "first-line" || !text.hasMetrics()){
+      text.setMetrics(line.flow, line.fontSize, line.isTextBold());
     }
     switch(text._type){
     case "char":
     case "tcy":
       return text;
     case "word":
-      return this._yieldWord(ctx, text);
+      return this._yieldWord(line, text);
     }
   },
-  _yieldWord : function(ctx, word){
-    var advance = word.getAdvance(ctx.getLineFlow(), ctx.getLetterSpacing());
+  _yieldWord : function(line, word){
+    var advance = word.getAdvance(line.flow, line.letterSpacing || 0);
+    var max_measure = this.context.getInlineMaxMeasure();
 
-    // if advance of this word is less than ctx.maxMeasure, just return.
-    if(advance <= ctx.maxMeasure){
+    // if advance of this word is less than max-measure, just return.
+    if(advance <= max_measure){
       word.setDevided(false);
       return word;
     }
     // if advance is lager than max_measure,
     // we must cut this word into some parts.
-    var font_size = ctx.getFontSize();
-    var max_measure = ctx.maxMeasure;
-    var is_bold = ctx.isTextBold();
-    var flow = ctx.getLineFlow();
-    var part = word.cutMeasure(font_size, max_measure); // get sliced word
-    part.setMetrics(flow, font_size, is_bold); // metrics for first half
-    word.setMetrics(flow, font_size, is_bold); // metrics for second half
+    var is_bold = line.isTextBold();
+    var part = word.cutMeasure(line.fontSize, max_measure); // get sliced word
+    part.setMetrics(line.flow, line.fontSize, is_bold); // metrics for first half
+    word.setMetrics(line.flow, line.fontSize, is_bold); // metrics for second half
     return part;
-  },
-  _yieldInlineTag : function(ctx, tag){
-    if(tag.isSingleTag()){
-      return tag;
-    }
-    switch(tag.getName()){
-    case "script":
-      ctx.addScript(tag);
-      return Exceptions.IGNORE;
-    case "style":
-      ctx.addStyle(tag);
-      return Exceptions.IGNORE;
-    default:
-      this.generator = this._createChildInlineTreeGenerator(ctx, tag);
-      this.generator.startPos = this.stream.pos - 1;
-      return this.generator.yield(ctx.line);
-    }
-  },
-  _createChildInlineTreeGenerator : function(ctx, tag){
-    switch(tag.getName()){
-    case "ruby":
-      return new RubyGenerator(tag, this.context, this.lineNo);
-    case "a":
-      return new LinkGenerator(tag, this.context, this.lineNo);
-    case "first-line":
-      return new FirstLineGenerator(tag, this.context, this.lineNo);
-    default:
-      return new ChildInlineTreeGenerator(tag, this.context, this.lineNo);
-    }
   }
 });
 
 
 var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
-  init : function(markup, context, parent_line_no){
-    this.markup = markup;
-    this.context = context;
-    this.stream = this._createStream();
-    this.lineNo = 0;
-    this.parentLineNo = parent_line_no;
-    this.rollbacked = false;
-  },
-  rollback : function(){
-    this._super();
-
-    // avoid duplicate increment for parentLineNo
-    if(!this.rollbacked){
-      this.parentLineNo++;
-      this.rollbacked = true;
-    }
-  },
-  isCommit : function(){
-    return this._commit;
-  },
-  getParentPos : function(){
-    return this.markup.pos;
-  },
-  getParentLineNo : function(){
-    return this.parentLineNo;
-  },
-  _createStream : function(){
-    return new TokenStream(this.markup.getContent());
-  },
   _createLine : function(parent){
     var line = this._super(parent);
     this._setBoxStyle(line, parent);
@@ -7966,25 +8272,21 @@ var ChildInlineTreeGenerator = InlineTreeGenerator.extend({
     var extent = parent.getContentExtent();
     return parent.flow.getBoxSize(measure, extent);
   },
-  _onCompleteTree : function(ctx, line){
+  _onCompleteLine : function(line){
     line.shortenMeasure();
   }
 });
 
 
 var RubyGenerator = ChildInlineTreeGenerator.extend({
-  _createStream : function(){
-    //return new RubyTagStream(this.markup.getContent());
-    return new RubyTagStream(this.markup);
-  },
-  _yieldElement : function(ctx){
-    var ruby = this._super(ctx);
+  _yieldInlineElement : function(line){
+    var ruby = this._super(line);
     if(typeof ruby === "number"){
       return ruby; // exception
     }
     // avoid overwriting metrics.
     if(!ruby.hasMetrics()){
-      ruby.setMetrics(ctx.getLineFlow(), ctx.getFontSize(), ctx.getLetterSpacing());
+      ruby.setMetrics(line.flow, line.fontSize, line.letterSpacing || 0);
     }
     return ruby;
   }
@@ -8001,352 +8303,61 @@ var RtGenerator = ChildInlineTreeGenerator.extend({
 
 
 var LinkGenerator = ChildInlineTreeGenerator.extend({
-  init : function(markup, context){
-    this._super(markup, context);
-    var anchor_name = markup.getTagAttr("name");
+  init : function(context){
+    this._super(context);
+    var anchor_name = this.context.markup.getTagAttr("name");
     if(anchor_name){
-      context.setAnchor(anchor_name);
+      this.context.setAnchor(anchor_name);
     }
   }
 });
 
 
 var FirstLineGenerator = ChildInlineTreeGenerator.extend({
-  init : function(markup, context){
-    this._super(markup, context);
-  },
   _createLine : function(parent){
-    if(this.lineNo > 0){
-      // first-line tag has finished, so reset normal css of parent.
-      this.markup.rename(this.markup.parent.getName());
-      this.markup.regetSelectorValue();
+    // first-line already created, so clear static attr for first-line tag.
+    if(!this.context.isStreamHead()){
+      this.context.markup.cssAttrStatic = {};
     }
     return this._super(parent);
   }
 });
 
 
-var BlockTreeContext = (function(){
-  function BlockTreeContext(page, markup, stream, context){
-    this.page = page;
-    this.markup = markup;
-    this.stream = stream;
-    this.context = context;
-    this.curExtent = 0;
-    this.maxExtent = page.getContentExtent();
-    this.flow = page.flow;
-  }
-
-  BlockTreeContext.prototype = {
-    addElement : function(element){
-      var extent = element.getBoxExtent(this.flow);
-      if(element instanceof Box && !element.isTextLine() && extent <= 0){
-	throw "EmptyBlock";
-      }
-      if(this.curExtent + extent > this.maxExtent){
-	throw "OverflowBlock";
-      }
-      this.page.addChildBlock(element);
-      this.curExtent += extent;
-      if(this.curExtent === this.maxExtent){
-	throw "FinishBlock";
-      }
-    },
-    pushBackToken : function(){
-      this.stream.prev();
-    },
-    getNextToken : function(){
-      var token = this.stream.get();
-      if(token && Token.isTag(token) && this.markup){
-	token.inherit(this.markup, this.context);
-      }
-      return token;
-    }
-  };
-  
-  return BlockTreeContext;
-})();
-
-
-var BlockTreeGenerator = ElementGenerator.extend({
-  init : function(markup, context){
-    this._super(markup, context);
-    this.generator = null;
-    this.stream = this._createStream();
-    this.localPageNo = 0;
-  },
-  hasNext : function(){
-    if(this.generator && this.generator.hasNext()){
-      return true;
-    }
-    return this.stream.hasNext();
-  },
-  backup : function(){
-    if(this.generator === null || this.generator instanceof InlineTreeGenerator === false){
-      this.stream.backup();
-    }
-    //this.stream.backup();
-  },
-  rollback : function(){
-    if(this.generator){
-      this.generator.rollback();
-    } else {
-      this.stream.rollback();
-    }
-  },
-  getCurGenerator : function(){
-    if(this.generator && this.generator.hasNext()){
-      return this.generator;
-    }
-    return null;
-  },
-  // if size is not defined, rest size of parent is used.
-  // if parent is null, root page is generated.
-  yield : function(parent, size){
-    var page_box, page_size;
-    page_size = size || this._getBoxSize(parent);
-    page_box = this._createBox(page_size, parent);
-    var ret = this._yieldPageTo(page_box);
-    return ret;
-  },
-  _getBoxSize : function(parent){
-    return this._getMarkupStaticSize() || parent.getRestSize();
-  },
-  // fill page with child page elements.
-  _yieldPageTo : function(page){
-    var ctx = new BlockTreeContext(page, this.markup, this.stream, this.context);
-
-    while(true){
-      this.backup();
-      var element = this._yieldPageElement(ctx, page);
-      if(element == Exceptions.PAGE_BREAK){
-	break;
-      } else if(element == Exceptions.BUFFER_END){
-	break;
-      } else if(element == Exceptions.SKIP){
-	break;
-      } else if(element == Exceptions.RETRY){
-	this.rollback();
-	break;
-      } else if(element == Exceptions.BREAK){
-	break;
-      } else if(element == Exceptions.IGNORE){
-	continue;
-      }
-
-      try {
-	ctx.addElement(element);
-	if(this.generator){
-	  this.generator.commit();
-	}
-      } catch(e){
-	if(e === "OverflowBlock" || e === "EmptyBlock"){
-	  this.rollback();
-	}
-	break;
-      }
-    }
-    if(this.localPageNo > 0){
-      page.clearBorderBefore();
-    } else {
-    }
-    if(!this.hasNext()){
-      this._onLastTree(page);
-    } else {
-      page.clearBorderAfter();
-    }
-    this._onCompleteTree(page);
-
-    // if content is not empty, increment localPageNo.
-    if(page.getBoxExtent() > 0){
-      this.localPageNo++;
-    }
-    return page;
-  },
-  _isEmptyElement : function(flow, element){
-    return (element instanceof Box) && !element.isTextLine() && (element.getContentExtent(flow) <= 0);
-  },
-  _createStream : function(){
-    var source = this._createSource(this.markup.getContent());
-    return new TokenStream(source);
-  },
-  // caution:
-  // this is not first preprocess.
-  // first conversion is in PageStream::_createSource, which discards comment, invalid tags .. etc.
-  // so this time we convert other things according to this generator locally.
-  _createSource : function(text){
-    return text
-      .replace(/^[ \n]+/, "") // shorten head space
-      .replace(/\s+$/, "") // discard tail space
-      .replace(/\r/g, ""); // discard CR
-  },
-  _onLastTree : function(page){
-  },
-  // called when page box is fully filled by blocks.
-  _onCompleteTree : function(page){
-  },
-  _yieldPageElement : function(ctx, parent){
-    if(this.generator && this.generator.hasNext()){
-      return this.generator.yield(parent);
-    }
-    var token = ctx.getNextToken();
-    if(token === null){
-      return Exceptions.BUFFER_END;
-    }
-    // in block level, new-line character makes no sense, just ignored.
-    if(Token.isChar(token) && token.isNewLineChar()){
-      return Exceptions.IGNORE;
-    }
-    if(Token.isTag(token) && token.isPageBreakTag()){
-      return Exceptions.PAGE_BREAK;
-    }
-    if(Token.isInline(token)){
-      // this is not block level element, so we push back this token,
-      // and delegate this stream to InlineTreeGenerator from the head of this inline element.
-      ctx.pushBackToken();
-      this.generator = new InlineTreeGenerator(this.markup, this.stream, this.context);
-      return this.generator.yield(parent);
-    }
-    return this._yieldBlockElement(parent, token);
-  },
-  _yieldBlockElement : function(parent, tag){
-    if(tag.hasStaticSize()){
-      return this._yieldStaticTag(parent, tag);
-    }
-
-    // if different flow is defined in this block tag,
-    // yield it as single inline page with rest size of current parent.
-    if(tag.hasFlow() && tag.getCssAttr("flow") != parent.getFlowName()){
-      var inline_size = parent.getRestSize();
-      var generator = new InlinePageGenerator(tag, this.context);
-      return generator.yield(parent, inline_size);
-    }
-    this.generator = this._createChildBlockTreeGenerator(parent, tag);
-    return this.generator.yield(parent);
-  },
-  _yieldStaticTag : function(parent, tag){
-    var box = this._yieldStaticElement(parent, tag);
-    if(!(box instanceof Box)){
-      return box; // exception
-    }
-
-    // pushed box is treated as a single block element.
-    if(tag.isPush()){
-      return box;
-    }
-
-    // floated box is treated as a single block element(with rest spaces filled by other elements).
-    if(box instanceof Box && box.logicalFloat){
-      return this._yieldFloatedBlock(parent, box, tag);
-    }
-
-    return box; // return as single block.
-  },
-  _yieldFloatedBlock : function(parent, aligned_box, tag){
-    var generator = new FloatedBlockTreeGenerator(this.markup, this.stream, this.context, aligned_box);
-    var block = generator.yield(parent);
-    this.generator = generator.getCurGenerator(); // inherit generator of aligned area
-    return block;
-  },
-  _createChildBlockTreeGenerator : function(parent, tag){
-    switch(tag.getName()){
-    case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
-      return this._getHeaderLineGenerator(parent, tag);
-    case "section": case "article": case "nav": case "aside":
-      return this._getSectionContentGenerator(parent, tag);
-    case "details": case "blockquote": case "figure": case "fieldset":
-      return this._getSectionRootGenerator(parent, tag);
-    case "table":
-      return this._getTableGenerator(parent, tag);
-    case "tbody": case "thead": case "tfoot":
-      return this._getTableRowGroupGenerator(parent, tag);
-    case "tr":
-      return this._getTableRowGenerator(parent, tag);
-    case "dl":
-      return this._getDefListGenerator(parent, tag);
-    case "ul": case "ol":
-      return this._getListGenerator(parent, tag);
-    case "li":
-      return this._getListItemGenerator(parent, tag);
-    case "hr":
-      return this._getHrGenerator(parent, tag);
-    default:
-      return new ChildBlockTreeGenerator(tag, this.context);
-    }
-  },
-  _getSectionContentGenerator : function(parent, tag){
-    return new SectionContentGenerator(tag, this.context);
-  },
-  _getSectionRootGenerator : function(parent, tag){
-    return new SectionRootGenerator(tag, this.context);
-  },
-  _getHrGenerator : function(parent, tag){
-    return new HrGenerator(tag, this.context);
-  },
-  _getHeaderLineGenerator : function(parent, tag){
-    return new HeaderGenerator(tag, this.context);
-  },
-  _getListGenerator : function(parent, tag){
-    return new ListGenerator(tag, this.context);
-  },
-  _getListItemGenerator : function(parent, tag){
-    var list_style = parent.listStyle || null;
-    if(list_style === null){
-      return new ChildBlockTreeGenerator(tag, this.context);
-    }
-    if(list_style.isInside()){
-      return new InsideListItemGenerator(tag, parent, this.context);
-    }
-    return new OutsideListItemGenerator(tag, parent, this.context);
-  },
-  _getDefListGenerator : function(parent, tag){
-    return new DefListGenerator(tag, this.context);
-  },
-  _getTableGenerator : function(parent, tag){
-    return new TableGenerator(tag, this.context);
-  },
-  _getTableRowGroupGenerator : function(parent, tag){
-    return new TableRowGroupGenerator(tag, this.context);
-  },
-  _getTableRowGenerator : function(parent, tag){
-    return new TableRowGenerator(tag, parent, this.context);
-  }
-});
-
-var InlineBlockGenerator = BlockTreeGenerator.extend({
+var InlineBlockGenerator = TreeGenerator.extend({
   _getBoxType : function(){
     return "inline-block";
   }
 });
 
-var ChildBlockTreeGenerator = BlockTreeGenerator.extend({
+var ChildBlockTreeGenerator = TreeGenerator.extend({
   // resize page to sum of total child size.
-  _onCompleteTree : function(page){
+  _onCompleteBlock : function(page){
     page.shortenExtent(page.getParentFlow());
   }
 });
 
 var SectionContentGenerator = ChildBlockTreeGenerator.extend({
-  init : function(markup, context){
-    this._super(markup, context);
-    this.context.logStartSection(markup);
+  init : function(context){
+    this._super(context);
+    this.context.logStartSection();
   },
-  _onLastTree : function(page){
-    this.context.logEndSection(this.markup);
+  _onLastBlock : function(page){
+    this.context.logEndSection();
   }
 });
 
 var SectionRootGenerator = ChildBlockTreeGenerator.extend({
-  init : function(markup, context){
-    this._super(markup, context);
-    this.context.startSectionRoot(markup);
+  init : function(context){
+    this._super(context);
+    this.context.startSectionRoot();
   },
   hasOutline : function(root_name){
     var buffer = this.getOutlineBuffer(root_name);
     return buffer.isEmpty() === false;
   },
   getOutlineBuffer : function(root_name){
-    var name = root_name || this.markup.getName();
+    var name = root_name || this.context.markup.getName();
     return this.context.getOutlineBuffer(name);
   },
   getOutlineTree : function(root_name){
@@ -8363,16 +8374,17 @@ var SectionRootGenerator = ChildBlockTreeGenerator.extend({
   setAnchor : function(name, page_no){
     this.context.setAnchor(name, page_no);
   },
-  _onLastTree : function(page){
-    this.context.endSectionRoot(this.markup);
+  _onLastBlock : function(page){
+    this.context.endSectionRoot();
     this._super();
   }
 });
 
 var HeaderGenerator = ChildBlockTreeGenerator.extend({
-  _onCompleteTree : function(page){
+  _onCompleteBlock : function(page){
     this._super(page);
-    page.id = Css.addNehanHeaderPrefix(this.context.logSectionHeader(this.markup));
+    var header_id = this.context.logSectionHeader();
+    page.id = Css.addNehanHeaderPrefix(header_id);
   },
   _onCreateBox : function(box, parent){
     box.addClass("nehan-header");
@@ -8380,46 +8392,35 @@ var HeaderGenerator = ChildBlockTreeGenerator.extend({
 });
 
 var BodyBlockTreeGenerator = SectionRootGenerator.extend({
-  init : function(data, ctx){
-    var context = ctx || new DocumentContext();
-    var markup = data;
-    if(typeof data === "string"){
-      markup = new Tag("<body>", data);
-    }
-    this._super(markup, context);
-  },
   _getBoxSize : function(){
     return Layout.getStdPageSize();
   },
   _createBox : function(size, parent){
     var box = Layout.createRootBox(size, "body");
     this._setBoxStyle(box, null);
-    box.percent = this.stream.getSeekPercent();
-    box.seekPos = this.stream.getSeekPos();
+    box.percent = this.context.getSeekPercent();
+    box.seekPos = this.context.getSeekPos();
     box.pageNo = this.context.getPageNo();
     box.charPos = this.context.getCharPos();
     box.css["font-size"] = Layout.fontSize + "px";
     return box;
   },
-  _onCompleteTree : function(page){
+  _onCompleteBlock : function(page){
     // step page no and character count inside this page
     this.context.stepPageNo();
     this.context.addCharPos(page.getCharCount());
   }
 });
 
-var FloatedBlockTreeGenerator = BlockTreeGenerator.extend({
-  init : function(markup, stream, context, floated_box){
-    this.markup = markup;
-    this.context = context;
-    this.stream = stream;
+var FloatedBlockTreeGenerator = TreeGenerator.extend({
+  init : function(context, floated_box){
+    this._super(context);
     this.floatedBox = floated_box;
   },
   yield: function(parent){
-    var backupPos2 = this.stream.backupPos; // backup the 'backup pos'
     var wrap_box = this._getFloatedWrapBox(parent, this.floatedBox);
     var rest_box = this._getFloatedRestBox(parent, wrap_box, this.floatedBox);
-    this._yieldPageTo(rest_box);
+    this._yieldElementsTo(rest_box);
     if(this.floatedBox.logicalFloat === "start"){
       wrap_box.addChildBlock(this.floatedBox);
       wrap_box.addChildBlock(rest_box);
@@ -8427,7 +8428,6 @@ var FloatedBlockTreeGenerator = BlockTreeGenerator.extend({
       wrap_box.addChildBlock(rest_box);
       wrap_box.addChildBlock(this.floatedBox);
     }
-    this.stream.backupPos = backupPos2; // restore backup pos
     return wrap_box;
   },
   _getFloatedRestBox : function(parent, wrap_box, floated_box){
@@ -8453,7 +8453,7 @@ var FloatedBlockTreeGenerator = BlockTreeGenerator.extend({
 
 // InlinePageGenerator yield the first page only,
 // because size of first page can be defined, but continuous pages are not.
-var InlinePageGenerator = BlockTreeGenerator.extend({
+var InlinePageGenerator = TreeGenerator.extend({
   hasNext : function(){
     return false;
   },
@@ -8472,85 +8472,50 @@ var InlinePageGenerator = BlockTreeGenerator.extend({
 
 // parallel generator is proxy of multiple generators.
 var ParallelGenerator = ChildBlockTreeGenerator.extend({
-  init : function(generators, markup, context, partition){
+  init : function(generators, partition, context){
+    this._super(context);
     this.generators = generators;
-    this.markup = markup;
-    this.context = context;
     this.partition = partition;
-    this._inheritParent();
-  },
-  _inheritParent : function(){
-    var parent_markup = this.markup;
-    var context = this.context;
-    List.iter(this.generators, function(gen){
-      if(gen.markup){
-	gen.markup.inherit(parent_markup, context);
-      }
-    });
   },
   hasNext : function(){
     return List.exists(this.generators, function(generator){
       return generator.hasNext();
     });
   },
-  backup : function(){
-    // do nothing
-  },
-  rollback : function(){
-    List.iter(this.generators, function(generator){
-      generator.rollback();
-    });
-  },
   yield : function(parent){
-    this.backup();
     var wrap_size = parent.getRestSize();
     var wrap_page = this._createBox(wrap_size, parent);
     var wrap_flow = parent.getParallelFlow();
-    wrap_page.setFlow(wrap_flow);
-    return this._yieldChilds(wrap_page, parent);
-  },
-  _setBoxEdge : function(box, edge){
-    // ignore edge
-    // because each edge of child layout are set by child-generators.
-  },
-  _getChildMeasure : function(index){
-    return this.partition.getSize(index);
-  },
-  _getChildExtent : function(parent){
-    return parent.getRestContentExtent();
-  },
-  _yieldChilds : function(wrap_page, parent){
-    var self = this, valid = false;
     var child_flow = parent.flow;
-    var is_empty = function(page){
-      return (page instanceof Box === false || page.getContentExtent() === 0);
-    };
+    wrap_page.setFlow(wrap_flow);
+    return this._yieldChildsTo(wrap_page, child_flow, this.partition);
+  },
+  _yieldChildsTo : function(wrap_page, child_flow, partition){
+    var child_extent = wrap_page.getRestContentExtent();
     var child_pages = List.mapi(this.generators, function(index, generator){
-      var child_measure = self._getChildMeasure(index);
-      var child_extent = self._getChildExtent(parent);
+      var child_measure = partition.getSize(index);
       var child_size = child_flow.getBoxSize(child_measure, child_extent);
-      return generator.yield(wrap_page, child_size);
-    });
-
-    if(List.forall(child_pages, is_empty)){
-      this.rollback();
-      return Exceptions.BREAK;
-    }
-      
-    var max_child = List.maxobj(child_pages, function(child_page){
-      if(child_page instanceof Box){
-	return child_page.getContentExtent();
+      var element = generator.yield(wrap_page, child_size);
+      if(element.breakBefore){
+	wrap_page.breakAfter = true;
+	return null;
       }
-      return 0;
+      if(element.breakAfter){
+	wrap_page.breakAfter = true;
+      }
+      return element;
+    });
+    var max_child = List.maxobj(child_pages, function(child_page){
+      return (child_page instanceof Box)? child_page.getContentExtent() : 0;
     });
     var max_content_extent = max_child.getContentExtent();
     var max_box_extent = max_child.getBoxExtent();
 
-    wrap_page.setContentExtent(parent.flow, max_box_extent);
+    wrap_page.setContentExtent(child_flow, max_box_extent);
     
     // resize each child by uniform extent size.
     List.iter(child_pages, function(child_page){
-      if(child_page){
+      if(child_page && child_page instanceof Box){
 	child_page.setContentExtent(child_flow, max_content_extent);
 	wrap_page.addParaChildBlock(child_page);
       }
@@ -8560,6 +8525,9 @@ var ParallelGenerator = ChildBlockTreeGenerator.extend({
 });
 
 var ParaChildGenerator = ChildBlockTreeGenerator.extend({
+  _setBoxEdge : function(){
+    // do nothing
+  },
   _onReadyBox : function(box, parent){
     // wrap box(parent) has parallel flow, so flip it to get original one.
     var flow = parent.getParallelFlipFlow();
@@ -8568,33 +8536,28 @@ var ParaChildGenerator = ChildBlockTreeGenerator.extend({
 });
 
 var TableGenerator = ChildBlockTreeGenerator.extend({
-  _createStream : function(){
-    return new TableTagStream(this.markup);
-  },
   _onReadyBox : function(box, parent){
-    if(this.markup.getCssAttr("border-collapse") === "collapse"){
+    if(this.context.markup.getCssAttr("border-collapse") === "collapse"){
       if(typeof this.collapse == "undefined"){
-	Collapse.set(this.markup, box);
+	Collapse.set(this.context.markup, box);
 	this.collapse = true; // set collapse flag(means collapse already calcurated).
       }
     }
   },
   _onCreateBox : function(box, parent){
-    box.partition = this.stream.getPartition(box);
+    box.partition = this.context.stream.getPartition(box);
   }
 });
 
 var TableRowGroupGenerator = ChildBlockTreeGenerator.extend({
   _onCreateBox : function(box, parent){
     box.partition = parent.partition;
-  },
-  _createStream : function(){
-    return new DirectTokenStream(this.markup.tableChilds);
   }
 });
 
+/*
 var TableRowGenerator = ParallelGenerator.extend({
-  init : function(markup, parent, context){
+  init : function(markup, context){
     var partition = parent.partition.getPartition(markup.tableChilds.length);
     var generators = List.map(markup.tableChilds, function(td){
       return new ParaChildGenerator(td, context);
@@ -8602,14 +8565,14 @@ var TableRowGenerator = ParallelGenerator.extend({
     this._super(generators, markup, context, partition);
   }
 });
-
+*/
 var ListGenerator = ChildBlockTreeGenerator.extend({
   _onCreateBox : function(box, parent){
-    var item_count = this.stream.getTokenCount();
-    var list_style_type = this.markup.getCssAttr("list-style-type", "none");
-    var list_style_pos = this.markup.getCssAttr("list-style-position", "outside");
-    var list_style_image = this.markup.getCssAttr("list-style-image", "none");
-    var list_style_format = this.markup.getCssAttr("list-style-format");
+    var item_count = this.context.getStreamTokenCount();
+    var list_style_type = this.context.markup.getCssAttr("list-style-type", "none");
+    var list_style_pos = this.context.markup.getCssAttr("list-style-position", "outside");
+    var list_style_image = this.context.markup.getCssAttr("list-style-image", "none");
+    var list_style_format = this.context.markup.getCssAttr("list-style-format");
     var list_style = new ListStyle({
       type:list_style_type,
       position:list_style_pos,
@@ -8619,9 +8582,6 @@ var ListGenerator = ChildBlockTreeGenerator.extend({
     var marker_advance = list_style.getMarkerAdvance(parent.flow, parent.fontSize, item_count);
     box.listStyle = list_style;
     box.partition = new Partition([marker_advance, box.getContentMeasure() - marker_advance]);
-  },
-  _createStream : function(){
-    return new ListTagStream(this.markup.getContent());
   }
 });
 
@@ -8631,7 +8591,8 @@ var InsideListItemGenerator = ChildBlockTreeGenerator.extend({
     var marker_html = Html.tagWrap("span", marker, {
       "class":"nehan-li-marker"
     });
-    markup.content = marker_html + Const.space + markup.getContent();
+    //markup.content = marker_html + Const.space + markup.getContent();
+    markup.contentRaw = marker_html + Const.space + markup.getContentRaw();
     this._super(markup, context);
   }
 });
@@ -8648,11 +8609,13 @@ var OutsideListItemGenerator = ParallelGenerator.extend({
   }
 });
 
+/*
 var DefListGenerator = ChildBlockTreeGenerator.extend({
   _createStream : function(){
     return new DefListTagStream(this.markup.getContent());
   }
 });
+*/
 
 var EvalResult = (function(){
   function EvalResult(opts){
@@ -8906,7 +8869,10 @@ var VertInlineTreeEvaluator = InlineTreeEvaluator.extend({
     });
   },
   evalRt : function(line, ruby){
-    var generator = new RtGenerator(ruby.rt, new DocumentContext());
+    var generator = new RtGenerator(new DocumentContext({
+      markup:ruby.rt,
+      stream:(new TokenStream(ruby.rt.getContentRaw()))
+    }));
     var rt_line = generator.yield(line);
     var css = ruby.getCssVertRt(line);
     for(var prop in css){
@@ -9296,13 +9262,20 @@ var PageStream = Class.extend({
       .replace(/<rt><\/rt>/gi, ""); // discard empty rt
   },
   _createGenerator : function(text){
+    var context = new DocumentContext();
     switch(Layout.root){
     case "body":
-      return new BodyBlockTreeGenerator(text);
+      return new BodyBlockTreeGenerator(
+	context.createBlockRoot(new Tag("<body>", text), new TokenStream(text))
+      );
     case "html":
-      return new HtmlGenerator(text);
+      return new HtmlGenerator(
+	context.createBlockRoot(new Tag("<html>", text), new HtmlTagStream(text))
+      );
     default:
-      return new DocumentGenerator(text);
+      return new DocumentGenerator(
+	context.createBlockRoot(null, new DocunemtTagStream(text))
+      );
     }
   },
   _createEvaluator : function(){
@@ -9481,8 +9454,8 @@ if(__engine_args.test){
 
   // generator
   __exports.ElementGenerator = ElementGenerator;
-  __exports.InlineTreeGenerator = InlineTreeGenerator;
-  __exports.BlockTreeGenerator = BlockTreeGenerator;
+  __exports.TreeGenerator = TreeGenerator;
+  __exports.ChildInlineTreeGenerator = ChildInlineTreeGenerator;
   __exports.BodyBlockTreeGenerator = BodyBlockTreeGenerator;
   __exports.ParallelGenerator = ParallelGenerator;
   __exports.ParaChildGenerator = ParaChildGenerator;
