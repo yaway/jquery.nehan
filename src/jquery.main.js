@@ -71,7 +71,7 @@
 	  show($dom, source);
 	});
       } else {
-	source = get_source_from_dom($dom);
+	source = opt.text? opt.text : get_source_from_dom($dom);
 	source = opt.onCreateSource(source);
 	show($dom, source);
       }
@@ -82,6 +82,11 @@
 
   // notice : default width is dynamically decided by target width.
   $.fn.nehan.defaults = {
+    // direct text property.
+    // if direct text is set, this value is directly rendered.
+    // default value is empty.
+    text:"",
+
     // whether use pager or not.
     // if true, content is shown by single screen and pager.
     // if false, pager is disabled and content is shown by multiple pages.
