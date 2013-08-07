@@ -192,6 +192,7 @@
     // this is not called if usePager is false.
     onComplete : function(reader){
       var outline_dom = reader.getOutlineNode("ol");
+      outline_dom.classList.add("nehan-outlines");
       if(outline_dom){
 	reader.getRootNode().appendChild(outline_dom);
       }
