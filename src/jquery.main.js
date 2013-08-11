@@ -22,6 +22,7 @@
     var output_pages = function($target, html){
       var width = get_width(options.width || $target.width());
       var engine = Nehan.setup({
+	config:opt.engineConfig,
 	layout:{
 	  direction:opt.direction,
 	  width:width,
@@ -91,6 +92,10 @@
     // if true, content is shown by single screen and pager.
     // if false, pager is disabled and content is shown by multiple pages.
     usePager:true,
+
+    // config args for nehan engine.
+    // default: empty(use default settings).
+    engineConfig:{},
     
     // size of screen height but this size is exceeded by spacingSize
     height: 380,

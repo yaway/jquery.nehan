@@ -783,7 +783,7 @@ var Reader = (function(){
       this.onComplete = opt.onComplete || function(){};
       this.onError = opt.onError || function(){};
       this.onPage = opt.onPage || function(){};
-      this.engine = this._createEngine();
+      this.engine = this._createEngine(opt.engineConfig);
       this.pager = this._createPager();
       this.stream = this._createStream(src);
       this.template = this._createTemplate();
@@ -914,8 +914,9 @@ var Reader = (function(){
 
       return this.template.render();
     },
-    _createEngine : function(){
+    _createEngine : function(config){
       var engine = Nehan.setup({
+	config:config,
 	layout:{
 	  direction:this.status.getDirection(),
 	  hori:this.status.getHoriDocumentMode(),
@@ -998,6 +999,7 @@ Nehan.Reader.version = "1.0.0";
     var output_pages = function($target, html){
       var width = get_width(options.width || $target.width());
       var engine = Nehan.setup({
+	config:opt.engineConfig,
 	layout:{
 	  direction:opt.direction,
 	  width:width,
@@ -1067,6 +1069,10 @@ Nehan.Reader.version = "1.0.0";
     // if true, content is shown by single screen and pager.
     // if false, pager is disabled and content is shown by multiple pages.
     usePager:true,
+
+    // config args for nehan engine.
+    // default: empty(use default settings).
+    engineConfig:{},
     
     // size of screen height but this size is exceeded by spacingSize
     height: 380,
