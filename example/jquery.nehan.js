@@ -753,7 +753,7 @@ var Reader = (function(){
     getPagerNode : function(){
       return this.pager.getRootNode();
     },
-    getOutlineNode : function(list_type){
+    getOutlineNode : function(list_type, onclick){
       var self = this;
       var _list_type = list_type || "ol";
       return this.stream.hasOutline("body")? this.stream.getOutlineNode("body", {
@@ -762,11 +762,13 @@ var Reader = (function(){
 	},
 	onClickLink : function(toc){
 	  var group_page_no = self.stream.getGroupPageNo(toc.pageNo);
-	  self.writePage(group_page_no);
-	  $(".nehan-header").removeClass("nehan-toc-clicked");
-	  $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
-	  //$(".nehan-toc-link").removeClass("nehan-toc-clicked");
-	  //$(link).addClass("nehan-toc-clicked");
+	  if(onclick){
+	    onclick(group_page_no, toc.headerId);
+	  } else {
+	    self.writePage(group_page_no);
+	    $(".nehan-header").removeClass("nehan-toc-clicked");
+	    $("#nehan-header-" + toc.headerId).addClass("nehan-toc-clicked");
+	  }
 	  return false;
 	}
       }) : null;
