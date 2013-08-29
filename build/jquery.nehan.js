@@ -983,23 +983,24 @@ Nehan.Reader.version = "1.0.0";
 
     // merge defaults
     var opt = $.extend({}, $.fn.nehan.defaults, options);
-    var get_width = function(width_value){
-      var int_width = parseInt(width_value, 10);
+    var get_width = function($target, width_value){
+      var parent_width = $target.width();
+      var int_width = parseInt(width_value || parent_width, 10);
       if(String(width_value).indexOf("%") > 0){
-	return Math.floor(int_width * screen.width / 100);
+	return Math.floor(parent_width * int_width / 100);
       }
       return int_width;
     };
 
     // create reader with pager
     var create_reader = function($target, html){
-      opt.width = get_width(options.width || $target.width());
+      opt.width = get_width($target, options.width);
       (new Nehan.Reader(html, opt)).renderTo($target[0]);
     };
 
     // output pages straight forward
     var output_pages = function($target, html){
-      var width = get_width(options.width || $target.width());
+      var width = get_width($target, options.width);
       var engine = Nehan.setup({
 	config:opt.engineConfig,
 	layout:{
