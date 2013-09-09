@@ -42,6 +42,9 @@ var Reader = (function(){
       var page_no = this.stream.getAnchorPageNo(anchor_name);
       this.writePage(page_no);
     },
+    getDirection : function(){
+      return this.status.getDirection();
+    },
     getPageNo : function(){
       return this.status.getPageNo();
     },
