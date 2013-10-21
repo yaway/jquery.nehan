@@ -3,7 +3,7 @@
  Copyright (C) 2010 Watanabe Masaki<lambda.watanabe[at]gmail.com>
  http://tategakibunko.mydns.jp/docs/nehan/
 
- licensed under MIT licence.
+ licensed under MIT license.
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -5296,6 +5296,17 @@ var Box = (function(){
       css["margin-left"] = css["margin-right"] = "auto";
       return css;
     },
+    getDatasetAttr : function(){
+      var attr = {};
+      if(this.markup){
+	this.markup.iterTagAttr(function(name, value){
+	  if(name.indexOf("data-") >= 0){
+	    attr[name] = value;
+	  }
+	});
+      }
+      return attr;
+    },
     getCharCount : function(){
       return this.charCount;
     },
@@ -8916,6 +8927,7 @@ var BlockTreeEvaluator = (function(){
       if(box.id){
 	attr.id = box.id;
       }
+      Args.copy(attr, box.getDatasetAttr());
       return Html.tagWrap("div", this.evalBoxChilds(box.getChilds()), attr);
     },
     evalBoxChilds : function(childs){
@@ -9048,10 +9060,12 @@ var InlineTreeEvaluator = Class.extend({
 
 var VertInlineTreeEvaluator = InlineTreeEvaluator.extend({
   evaluate : function(line){
-    return Html.tagWrap("div", this.evalTextLineBody(line, line.getChilds()), {
+    var attr = {
       "style":Css.toString(line.getCssInline()),
       "class":line.getCssClasses()
-    });
+    };
+    Args.copy(attr, line.getDatasetAttr());
+    return Html.tagWrap("div", this.evalTextLineBody(line, line.getChilds()), attr);
   },
   evalRuby : function(line, ruby){
     var body = this.evalRb(line, ruby) + this.evalRt(line, ruby);
@@ -9220,10 +9234,12 @@ var VertInlineTreeEvaluator = InlineTreeEvaluator.extend({
 var HoriInlineTreeEvaluator = InlineTreeEvaluator.extend({
   evaluate : function(line, ctx){
     var tag_name = line.isInlineOfInline()? "span" : "div";
-    return Html.tagWrap(tag_name, this.evalTextLineBody(line, line.getChilds(), ctx), {
+    var attr = {
       "style":Css.toString(line.getCssInline()),
       "class":line.getCssClasses()
-    });
+    };
+    Args.copy(attr, line.getDatasetAttr());
+    return Html.tagWrap(tag_name, this.evalTextLineBody(line, line.getChilds(), ctx), attr);
   },
   evalRuby : function(line, ruby, ctx){
     var body = this.evalRt(line, ruby, ctx) + this.evalRb(line, ruby, ctx);
