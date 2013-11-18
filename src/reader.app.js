@@ -183,6 +183,9 @@ var Reader = (function(){
     _updateScreen : function(){
       var self = this;
       var page_no = this.status.getPageNo();
+      if(page_no < 0){
+	return;
+      }
       var cache = this.status.getScreenCache(page_no);
       var percent = cache.result.percent;
       if(!this.stream.hasNext() && !this.stream.hasPage(page_no+1)){
