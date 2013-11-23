@@ -1,6 +1,6 @@
 {
   "name": "jquery.nehan",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "jquery plugin for nehan.js",
   "main": "jquery.nehan.js",
   "scripts": {

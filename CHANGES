@@ -6,6 +6,10 @@ Mark "*": bug fixed.
 Mark "!": change that can break compatibility with older version
 ===============================================================================
 
+version 1.0.3, 2013/11/23
+==========================
+o add new option args 'vertFontFamily', 'horiFontFamily', 'markerFontFamily'.
+
 version 1.0.2, 2013/08/11
 ==========================
 o new argument text
