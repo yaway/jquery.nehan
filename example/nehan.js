@@ -5561,6 +5561,9 @@ var Box = (function(){
       }
       return ret;
     },
+    isHeader : function(){
+      return this.markup? this.markup.isHeaderTag() : false;
+    },
     isBlock : function(){
       return !this.isTextLine();
     },
@@ -6123,30 +6126,18 @@ var OutlineBuffer = (function(){
     },
     addHeaderLog : function(log){
       // if section tag can't be included in parent layout,
-      // it's added twice by rollback yielding.
-      // in such case, we have to update old one.
+      // it will be added 'twice' by rollback yielding.
+      // in such case, we have to overwrite old one.
       var pos = this._findLog(log);
       if(pos >= 0){
-	this.logs[pos] = log; // update log
+	this.logs[pos] = log; // overwrite log
 	return;
       }
       this.logs.push(log);
     },
-    // find same log without page no.
-    _isSameLog : function(log1, log2){
-      for(var prop in log1){
-	if(prop == "pageNo" || prop == "headerId"){
-	  continue;
-	}
-	if(log1[prop] != log2[prop]){
-	  return false;
-	}
-      }
-      return true;
-    },
     _findLog : function(log){
       for(var i = this.logs.length - 1; i >= 0; i--){
-	if(this._isSameLog(log, this.logs[i])){
+	if(log.headerId === this.logs[i].headerId){
 	  return i;
 	}
       }
@@ -6697,9 +6688,11 @@ var DocumentContext = (function(){
       var rank = this.markup.getHeaderRank();
       var title = this.markup.getContentRaw();
       var page_no = this.getPageNo();
-      var header_id = __global_header_id++;
-      this.outlineContext.logSectionHeader(type, rank, title, page_no, header_id);
-      return header_id;
+      if(typeof this.markup.headerId === "undefined"){
+	this.markup.headerId = __global_header_id++;
+      }
+      this.outlineContext.logSectionHeader(type, rank, title, page_no, this.markup.headerId);
+      return this.markup.headerId;
     }
   };
 
@@ -8970,6 +8963,7 @@ var BlockTreeEvaluator = (function(){
     evalImageContent : function(box){
       return Html.tagSingle("img", Args.copy({
 	"src": box.src,
+	"title":box.markup.getTagAttr("title") || "",
 	"width": box.getContentWidth(),
 	"height": box.getContentHeight()
       }, box.getDatasetAttr()));
@@ -9598,7 +9592,7 @@ var PageGroupStream = PageStream.extend({
   }
 });
 
-Nehan.version = "4.0.7";
+Nehan.version = "4.0.8";
 
 Args.copy(Env, __engine_args.env || {});
 Args.copy(Layout, __engine_args.layout || {});
