@@ -1,7 +1,7 @@
 /*
  nehan.js
  Copyright (C) 2010 Watanabe Masaki<lambda.watanabe[at]gmail.com>
- http://tategakibunko.mydns.jp/docs/nehan/
+ http://tb.antiscroll.com/docs/nehan/
 
  licensed under MIT license.
 
@@ -160,24 +160,25 @@ var Layout = {
 var Env = (function(){
   var nav = navigator.appName;
   var ua = navigator.userAgent.toLowerCase();
-  var matched = ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/);
-  var browser, version, is_transform_enable;
-  if(matched){
-    tmp_match = ua.match(/version\/([\.\d]+)/i);
-    if(tmp_match){
-      matched[2] = tmp_match[1];
-    }
-    browser = matched[1].toLowerCase();
-    version = parseInt(matched[2], 10);
-    if(browser === "msie"){
-      is_transform_enable = version >= 9;
-    } else {
-      is_transform_enable = true;
-    }
+  var is_pure_trident = ua.indexOf("trident") >= 0 && ua.indexOf("msie") < 0;
+  var browser, version, is_transform_enable, tmp_match;
+  if(is_pure_trident){
+    browser = "msie";
+    tmp_match = ua.match(/rv:([\.\d]+)/i);
+    version = tmp_match? parseInt(tmp_match[1], 10) : "";
   } else {
-    browser = nav.toLowerCase();
-    version = parseInt(navigator.appVersion, 10);
-    is_transform_enable = false;
+    var matched = ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/);
+    if(matched){
+      tmp_match = ua.match(/version\/([\.\d]+)/i);
+      if(tmp_match){
+	matched[2] = tmp_match[1];
+      }
+      browser = matched[1].toLowerCase();
+      version = parseInt(matched[2], 10);
+    } else {
+      browser = nav.toLowerCase();
+      version = parseInt(navigator.appVersion, 10);
+    }
   }
 
   var is_ie = browser === "msie";
@@ -191,11 +192,13 @@ var Env = (function(){
   var is_android_family = ua.indexOf("android") != -1;
   var is_smart_phone = is_iphone_family || is_android_family;
   var is_webkit = ua.indexOf("webkit") != -1;
+  var is_transform_enable = is_pure_trident || !(is_ie && version <= 8);
   var is_vertical_glyph_enable = is_chrome && (is_win || is_mac) && version >= 24;
 
   return {
     version : version,
     isIE : is_ie,
+    isTrident : is_pure_trident,
     isChrome : is_chrome,
     isWebkit : is_webkit,
     isIphone : is_iphone,
@@ -3303,16 +3306,33 @@ var Word = (function(){
 
   Word.prototype = {
     getCssVertTrans : function(line){
-      var css = {}, font_size = line.getFontSize();
+      var css = {};
       css["letter-spacing"] = line.letterSpacing + "px";
-      css.width = font_size + "px";
+      css.width = line.getFontSize() + "px";
       css.height = this.bodySize + "px";
-      css["margin-left"] = css["margin-right"] = "auto";
+      css["margin-left"] = "auto";
+      css["margin-right"] = "auto";
       return css;
     },
     getCssVertTransBody : function(line){
       var css = {};
       css["font-family"] = line.getFontFamily();
+      return css;
+    },
+    getCssVertTransBodyTrident : function(line){
+      var css = {};
+      css["font-family"] = line.getFontFamily();
+      css.width = line.getFontSize() + "px";
+      css.height = this.bodySize + "px";
+      css["transform-origin"] = "50% 50%";
+
+      // force set line-height to measure(this.bodySize) before rotation,
+      // and fix offset by translate after rotatation.
+      css["line-height"] = this.bodySize + "px";
+      var trans = Math.floor((this.bodySize - line.getFontSize()) / 2);
+      if(trans > 0){
+	css["transform"] = "rotate(90deg) translate(-" + trans + "px, 0)";
+      }
       return css;
     },
     getCssVertTransIE : function(line){
@@ -5264,10 +5284,10 @@ var BoxPosition = (function(){
   function BoxPosition(position, offset){
     offset = offset || {};
     this.position = position;
-    this.top = offset.top || "auto";
-    this.left = offset.left || "auto";
-    this.right = offset.right || "auto";
-    this.bottom = offset.bottom || "auto";
+    this.top = (typeof offset.top !== "undefined")? offset.top : "auto";
+    this.left = (typeof offset.left !== "undefined")? offset.left : "auto";
+    this.right = (typeof offset.right !== "undefined")? offset.right : "auto";
+    this.bottom = (typeof offset.bottom !== "undefined")? offset.bottom : "auto";
   }
 
   BoxPosition.prototype = {
@@ -9448,6 +9468,9 @@ var VertInlineTreeEvaluator = (function(){
 
   VertInlineTreeEvaluator.prototype.evalWord = function(line, word){
     if(Env.isTransformEnable){
+      if(Env.isTrident){
+	return this.evalWordTransformTrident(line, word);
+      }
       return this.evalWordTransform(line, word);
     } else if(Env.isIE){
       return this.evalWordIE(line, word);
@@ -9460,6 +9483,17 @@ var VertInlineTreeEvaluator = (function(){
     var body = Html.tagWrap("div", word.data, {
       "class": "nehan-rotate-90",
       "style": Css.toString(word.getCssVertTransBody(line))
+    });
+    return Html.tagWrap("div", body, {
+      "style": Css.toString(word.getCssVertTrans(line))
+    });
+  };
+
+  VertInlineTreeEvaluator.prototype.evalWordTransformTrident = function(line, word){
+    var body = Html.tagWrap("div", word.data, {
+      // trident rotation needs some hack.
+      //"class": "nehan-rotate-90",
+      "style": Css.toString(word.getCssVertTransBodyTrident(line))
     });
     return Html.tagWrap("div", body, {
       "style": Css.toString(word.getCssVertTrans(line))
@@ -10109,6 +10143,7 @@ if(__engine_args.test){
   __exports.Selectors = Selectors;
 }
 
+// main interfaces
 __exports.createPageStream = function(text, group_size){
   group_size = Math.max(1, group_size || 1);
   return (group_size === 1)? (new PageStream(text)) : (new PageGroupStream(text, group_size));
