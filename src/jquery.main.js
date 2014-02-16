@@ -58,7 +58,7 @@
 
     var show = function($dom, source){
       $dom.html("").css("display", "none");
-      var $dst = $("<div />").attr("class", $dom.attr("class") || "").insertAfter($dom);
+      var $dst = $("<div />").attr("class", $dom.attr("class") || "").addClass("jquery-nehan-page").insertAfter($dom);
       if(opt.usePager){
 	create_reader($dst, source);
       } else {
