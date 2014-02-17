@@ -34,6 +34,7 @@ to make jquery.nehan.min.js
 	<script type="text/javascript">
 	  $(function(){
 	    $(".some-target").nehan({
+	          usePager:true, // if false, pager disabled(append mode)
 		  direction:"hori", // or "vert"
 		  hori:"lr-tb",
 		  vert:"tb-rl", // or "tb-lr"
@@ -48,10 +49,6 @@ to make jquery.nehan.min.js
 	  });
 	</script>
 	```
-
-## More Info
-
-[jquery.nehan tutorial](http://tb.antiscroll.com/docs/nehan/jquery.nehan).
 
 ## License
 
