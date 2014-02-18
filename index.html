@@ -267,17 +267,11 @@ $(".my-nehan-document").nehan({
 
 	<h3>pagerElements : String Array</h3>
 	<p>UI orders of pager.</p>
-	<p>By default, this is ["left-next", "indicator", "right-prev"].</p>
-	<p>UI parts are combination of "left-next", "left-prev", "right-next", "right-prev", "indicator", "progress".</p>
-	<p>"indicator" consists of page_no and total_page_count.</p>
-	<p>"progress" consists of just page_perecnt.</p>
-	<h4>samples of pager elements</h4>
+	<p>UI parts are combinations of "left-next", "left-prev", "right-next", "right-prev", "indicator".</p>
+	<p>If document mode is "lr-tb", ["left-prev", "indicator", "right-next"] is suitable.</p>
+	<p>If document mode is "tb-rl", ["left-next", "indicator", "right-prev"] is suitable.</p>
 
-<pre class="prettyprint lang-js">
-["left-prev", "progress", "right-next"]
-["left-prev", "right-next", "progress"]
-["left-prev", "indicator", "right-next"]
-</pre>
+	<hr />
 
 	<h3>onCreateEngine : function(engine)</h3>
 	<p>Called when layout engine is created and ready to use.</p>
@@ -311,7 +305,6 @@ $(".my-nehan-document").nehan({
 	<h3>onComplete : function(reader)</h3>
 	<p>Called after all pages generated.</p>
 	<p>This is not called if usePager is false.</p>
-	<p>And this callback is not called when you select pager-ui "progress".</p>
 	<p>By default, we append outline at the bottom of reader.</p>
 	<p>If you don't want it, disable like this.</p>
 
