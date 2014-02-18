@@ -165,10 +165,14 @@ $(".my-nehan-document").nehan({
 	<h3>direction : String</h3>
 	<p><code>vert</code> or <code>hori</code> is enabled.</p>
 
+	<hr />
+
 	<h3>hori : String</h3>
 	<p>Document mode when <code>direction</code> property is assigned to "hori".</p>
 	<p>Only "lr-tb" is supported.</p>
 	<p>Notice that "lr" means inline-text flows from <strong>left to right</strong>, and "tb" means block level line flows from <strong>top to bottom</strong>.</p>
+
+	<hr />
 
 	<h3>vert : String</h3>
 	<p>Document mode when <code>direction</code> property is assigned to "vert".</p>
@@ -177,14 +181,22 @@ $(".my-nehan-document").nehan({
 	  and "rl" means block level line flows from <strong>right to left</strong>,
 	  and "lr" means <strong>left to right</strong>.</p>
 
+	<hr />
+
 	<h3>fontSize : Integer</h3>
 	<p>Define basic font size in px size.</p>
+
+	<hr />
 
 	<h3>width : Integer</h3>
 	<p>Define screen width of reader ui in px size.</p>
 
+	<hr />
+
 	<h3>height : Integer</h3>
 	<p>Define screen height of reader ui in px size.</p>
+
+	<hr />
 
 	<h3>text : String</h3>
 	<p>By default, source text is obtained from each jquery object.</p>
@@ -202,36 +214,56 @@ $(".my-nehan-document").nehan({
 });
 </pre>
 
+	<hr />
+
 	<h3>vertFontFamily : String</h3>
 	<p>font-famiy in vertical mode.</p>
 	<p>Default value is "'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro','HiraMinProN-W3','IPA明朝','IPA Mincho', 'Meiryo','メイリオ','ＭＳ 明朝','MS Mincho', monospace".</p>
+
+	<hr />
 
 	<h3>horiFontFamily : String</h3>
 	<p>font-famiy in horizontal mode.</p>
 	<p>Default value is "'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace".</p>
 
+	<hr />
+
 	<h3>rowCount : Integer</h3>
 	<p>Row count of screen division. 1 or 2 available.</p>
+
+	<hr />
 
 	<h3>colCount : Integer</h3>
 	<p>Col count of screen division. 1 or 2 available.</p>
 
+	<hr />
+
 	<h3>spacingSize : Integer</h3>
 	<p>Space size of each divided page.</p>
+
+	<hr />
 
 	<h3>usePager : Boolean</h3>
 	<p>If false, pager object not displayed, and each paged-media appended to previous one.</p>
 	<p>This is <strong>true</strong> by default.</p>
 
+	<hr />
+
 	<h3>useWheel : Boolean</h3>
 	<p>Mouse wheel is enabled if true, <strong>true</strong> by default.</p>
+
+	<hr />
 
 	<h3>useNombre : Boolean</h3>
 	<p>Nombre number is displayed if true, <strong>false</strong> by default.</p>
 
+	<hr />
+
 	<h3>readerElements : String Array</h3>
 	<p>UI orders of reader.</p>
 	<p>By default, this is ["screen", "pager"].</p>
+
+	<hr />
 
 	<h3>pagerElements : String Array</h3>
 	<p>UI orders of pager.</p>
@@ -261,14 +293,20 @@ $(".my-nehan-document").nehan({
   }
 });
 </pre>
+	<hr />
+
 	<h3>onReadyPage : function(reader)</h3>
 	<p>Called when first page is set to screen.</p>
 	<p>Usefull to setup keybord shortcut or enable variaous ui effects.</p>
 	<p>This is not called if usePager is false.</p>
 
+	<hr />
+
 	<h3>onPage : function(reader)</h3>
 	<p>Called after page_no is updated.</p>
 	<p>This is not called if usePager is false.</p>
+
+	<hr />
 
 	<h3>onComplete : function(reader)</h3>
 	<p>Called after all pages generated.</p>
@@ -288,6 +326,8 @@ $(".my-nehan-document").nehan({
   }
 });
 </pre>
+	<hr />
+
 	<h3>onError : function(reader)</h3>
 	<p>Called when something wrong.</p>
       </section>
@@ -316,7 +356,7 @@ $(".my-nehan-document").nehan({
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
       
-      ga('create', 'UA-399060-28', 'tategakibunko.github.io');
+      ga('create', 'UA-399060-27', 'tategakibunko.github.io');
       ga('send', 'pageview');
     </script>
   </body>
