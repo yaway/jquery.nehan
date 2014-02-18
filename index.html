@@ -140,15 +140,157 @@ lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
       <section>
         <h2><a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting Started</h2>
 
+	<p>Here is minimus sample code.</p>
+
 <pre class="prettyprint lang-js">
 $(".my-nehan-document").nehan({
   direction:"hori", // or "vert"
+  hori:"lr-tb", // "rl-tb" is not supported.
+  vert:"tb-rl", // or "tb-rl"
   fontSize:16,
   width: 640,
   height: 480
 });
 </pre>
+
+	<p>Document is horizontal, and page size is 640x480, and font size is 16px.</p>
+	<p>Reader ui is displayed at each $(".my-nehan-document").</p>
+
       </section><!-- getting started -->
+
+      <!-- options -->
+      <section>
+        <h2><a name="options" class="anchor" href="#options"><span class="octicon octicon-link"></span></a>Options</h2>
+	
+	<h3>direction : String</h3>
+	<p><code>vert</code> or <code>hori</code> is enabled.</p>
+
+	<h3>hori : String</h3>
+	<p>Document mode when <code>direction</code> property is assigned to "hori".</p>
+	<p>Only "lr-tb" is supported.</p>
+	<p>Notice that "lr" means inline-text flows from <strong>left to right</strong>, and "tb" means block level line flows from <strong>top to bottom</strong>.</p>
+
+	<h3>vert : String</h3>
+	<p>Document mode when <code>direction</code> property is assigned to "vert".</p>
+	<p>Both "tb-rl" and "tb-lr" are supported.</p>
+	<p>Notice that "tb" means inline-text flows from <strong>top to bottom</strong>,
+	  and "rl" means block level line flows from <strong>right to left</strong>,
+	  and "lr" means <strong>left to right</strong>.</p>
+
+	<h3>fontSize : Integer</h3>
+	<p>Define basic font size in px size.</p>
+
+	<h3>width : Integer</h3>
+	<p>Define screen width of reader ui in px size.</p>
+
+	<h3>height : Integer</h3>
+	<p>Define screen height of reader ui in px size.</p>
+
+	<h3>text : String</h3>
+	<p>By default, source text is obtained from each jquery object.</p>
+	<p>But you can use direct text value using property <code>text</code>.</p>
+
+<pre class="prettyprint lang-js">
+$(".my-nehan-document").nehan({
+  text:"not from dom text, but direct text",
+  direction:"hori", // or "vert"
+  hori:"lr-tb", // "rl-tb" is not supported.
+  vert:"tb-rl", // or "tb-rl"
+  fontSize:16,
+  width: 640,
+  height: 480
+});
+</pre>
+
+	<h3>vertFontFamily : String</h3>
+	<p>font-famiy in vertical mode.</p>
+	<p>Default value is "'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro','HiraMinProN-W3','IPA明朝','IPA Mincho', 'Meiryo','メイリオ','ＭＳ 明朝','MS Mincho', monospace".</p>
+
+	<h3>horiFontFamily : String</h3>
+	<p>font-famiy in horizontal mode.</p>
+	<p>Default value is "'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace".</p>
+
+	<h3>rowCount : Integer</h3>
+	<p>Row count of screen division. 1 or 2 available.</p>
+
+	<h3>colCount : Integer</h3>
+	<p>Col count of screen division. 1 or 2 available.</p>
+
+	<h3>spacingSize : Integer</h3>
+	<p>Space size of each divided page.</p>
+
+	<h3>usePager : Boolean</h3>
+	<p>If false, pager object not displayed, and each paged-media appended to previous one.</p>
+	<p>This is <strong>true</strong> by default.</p>
+
+	<h3>useWheel : Boolean</h3>
+	<p>Mouse wheel is enabled if true, <strong>true</strong> by default.</p>
+
+	<h3>useNombre : Boolean</h3>
+	<p>Nombre number is displayed if true, <strong>false</strong> by default.</p>
+
+	<h3>readerElements : String Array</h3>
+	<p>UI orders of reader.</p>
+	<p>By default, this is ["screen", "pager"].</p>
+
+	<h3>pagerElements : String Array</h3>
+	<p>UI orders of pager.</p>
+	<p>By default, this is ["left-next", "indicator", "right-prev"].</p>
+	<p>UI parts are combination of "left-next", "left-prev", "right-next", "right-prev", "indicator", "progress".</p>
+	<p>"indicator" consists of page_no and total_page_count.</p>
+	<p>"progress" consists of just page_perecnt.</p>
+	<h4>samples of pager elements</h4>
+
+<pre class="prettyprint lang-js">
+["left-prev", "progress", "right-next"]
+["left-prev", "right-next", "progress"]
+["left-prev", "indicator", "right-next"]
+</pre>
+
+	<h3>onCreateEngine : function(engine)</h3>
+	<p>Called when layout engine is created and ready to use.</p>
+
+<pre class="prettyprint lang-js">
+$(".my-nehan-document").nehan({
+  direction:"hori", // or "vert"
+  fontSize:16,
+  width: 640,
+  height: 480,
+  onCreateEngine : function(engine){
+    engine.setStyle("h1", {"font-size":"30px"});
+  }
+});
+</pre>
+	<h3>onReadyPage : function(reader)</h3>
+	<p>Called when first page is set to screen.</p>
+	<p>Usefull to setup keybord shortcut or enable variaous ui effects.</p>
+	<p>This is not called if usePager is false.</p>
+
+	<h3>onPage : function(reader)</h3>
+	<p>Called after page_no is updated.</p>
+	<p>This is not called if usePager is false.</p>
+
+	<h3>onComplete : function(reader)</h3>
+	<p>Called after all pages generated.</p>
+	<p>This is not called if usePager is false.</p>
+	<p>And this callback is not called when you select pager-ui "progress".</p>
+	<p>By default, we append outline at the bottom of reader.</p>
+	<p>If you don't want it, disable like this.</p>
+
+<pre class="prettyprint lang-js">
+$(".my-nehan-document").nehan({
+  direction:"hori", // or "vert"
+  fontSize:16,
+  width: 640,
+  height: 480,
+  onComplete : function(reader){
+    // do nothing
+  }
+});
+</pre>
+	<h3>onError : function(reader)</h3>
+	<p>Called when something wrong.</p>
+      </section>
 
       <!-- license -->
       <section>
