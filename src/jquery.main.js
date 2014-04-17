@@ -42,10 +42,10 @@
       var stream = engine.createPageStream(html);
 
       stream.asyncGet({
-	onProgress:function(caller){
+	onProgress:function(stream, tree){
 	  var page_node = document.createElement("div");
-	  var page_result = stream.getSeekPageResult();
-	  page_node.innerHTML = page_result.getHtml();
+	  var page = stream.getPage(tree.pageNo);
+	  page_node.innerHTML = page.html;
 	  $target.append(page_node);
 	}
       });

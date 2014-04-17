@@ -39,7 +39,7 @@ var Reader = (function(){
       }
     },
     writeAnchorPage : function(anchor_name){
-      var page_no = this.stream.getAnchorPageNo(anchor_name);
+      var page_no = this.engine.documentContext.getAnchorPageNo(anchor_name);
       this.writePage(page_no);
     },
     getDirection : function(){
@@ -63,7 +63,7 @@ var Reader = (function(){
     getOutlineNode : function(list_type, onclick){
       var self = this;
       var _list_type = list_type || "ol";
-      return this.stream.hasOutline("body")? this.stream.getOutlineNode("body", {
+      return this.engine.documentContext.createBodyOutlineElement({
 	createRoot: function(){
 	  return document.createElement(_list_type);
 	},
@@ -78,7 +78,7 @@ var Reader = (function(){
 	  }
 	  return false;
 	}
-      }) : null;
+      });
     },
     getEngine : function(){
       return this.engine;
@@ -130,14 +130,14 @@ var Reader = (function(){
     _startRandAccessStream : function(){
       var self = this;
       this.stream.asyncGet({
-	onComplete : function(time){
+	onComplete : function(stream, time){
 	  self._onComplete(time);
 	},
-	onProgress : function(caller){
-	  var page_result = caller.getSeekPageResult();
-	  self._onProgress(page_result);
+	onProgress : function(stream, tree){
+	  var page = stream.getPage(tree.pageNo);
+	  self._onProgress(page);
 	},
-	onError : function(caller){
+	onError : function(stream){
 	  self._onError(caller);
 	}
       });
@@ -159,13 +159,12 @@ var Reader = (function(){
     _onComplete : function(time){
       this.onComplete(this);
     },
-    _onProgress : function(page_result){
-      var page_no = page_result.getPageNo();
-      this.status.setPageCount(page_no + 1);
-      this._cacheResult(page_result);
+    _onProgress : function(page){
+      this.status.setPageCount(page.pageNo + 1);
+      this._cacheResult(page);
       this.pager.updatePageCount();
 
-      if(page_no === 0){
+      if(page.pageNo === 0){
 	this.writePage(0);
 	this.onReadyPage(this);
       }
