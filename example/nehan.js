@@ -2634,6 +2634,9 @@ var Token = {
   },
   isTcy : function(token){
     return token._type === "tcy";
+  },
+  isNewLine : function(token){
+    return token instanceof Char && token.isNewLineChar();
   }
 };
 
@@ -4129,64 +4132,6 @@ var BoxCorner = {
   }
 };
 
-var BoxSizing = (function(){
-  function BoxSizing(value){
-    // 'margin-box' is original sizing scheme of nehan,
-    // even if margin is included in box size.
-    this.value = value || "margin-box";
-  }
-
-  BoxSizing.prototype = {
-    containEdgeSize : function(){
-      return this.value !== "margin-box";
-    },
-    containMarginSize : function(){
-      return this.value === "margin-box";
-    },
-    containBorderSize : function(){
-      return this.value === "margin-box" || this.value === "border-box";
-    },
-    containPaddingSize : function(){
-      return this.value === "margin-box" || this.value === "border-box" || this.value === "padding-box";
-    },
-    getSubEdge : function(edge){
-      var ret = new BoxEdge();
-      if(this.containMarginSize()){
-	ret.margin = edge.margin;
-      }
-      if(this.containPaddingSize()){
-	ret.padding = edge.padding;
-      }
-      if(this.containBorderSize()){
-	ret.border = edge.border;
-      }
-      return ret;
-    },
-    getCss : function(){
-      var css = {};
-      css["box-sizing"] = "content-box";
-      return css;
-    }
-  };
-
-  return BoxSizing;
-})();
-
-
-var BoxSizings = {
-  "content-box":(new BoxSizing("content-box")),
-  "padding-box":(new BoxSizing("padding-box")),
-  "border-box":(new BoxSizing("border-box")),
-  "margin-box":(new BoxSizing("margin-box")),
-  getByName : function(name){
-    if(typeof this[name] === "undefined"){
-      throw "undefined box-sizing:" + name;
-    }
-    return this[name];
-  }
-};
-
-
 var Font = (function(){
   function Font(size){
     this.size = size;
@@ -5586,12 +5531,6 @@ var TokenStream = (function(){
   }
 
   TokenStream.prototype = {
-    _createLexer : function(src){
-      return new HtmlLexer(src);
-    },
-    getSrc : function(){
-      return this.lexer.getSrc();
-    },
     hasNext : function(){
       return (!this.eof || this.pos < this.tokens.length);
     },
@@ -5604,36 +5543,11 @@ var TokenStream = (function(){
     isHead : function(){
       return this.pos === 0;
     },
-    look : function(index){
-      return this.tokens[index] || null;
-    },
-    next : function(cnt){
-      var count = cnt || 1;
-      this.pos = this.pos + count;
-    },
     prev : function(){
       this.pos = Math.max(0, this.pos - 1);
     },
     setPos : function(pos){
       this.pos = pos;
-    },
-    skipIf : function(fn){
-      var token = this.peek();
-      if(token && fn(token)){
-	this.next();
-      }
-    },
-    skipUntil : function(fn){
-      while(this.hasNext()){
-	var token = this.get();
-	if(token === null){
-	  break;
-	}
-	if(!fn(token)){
-	  this.prev();
-	  break;
-	}
-      }
     },
     rewind : function(){
       this.pos = 0;
@@ -5659,19 +5573,11 @@ var TokenStream = (function(){
       this.pos++;
       return token;
     },
+    getSrc : function(){
+      return this.lexer.getSrc();
+    },
     getPos : function(){
       return this.pos;
-    },
-    getAll : function(){
-      while(!this.eof){
-	this._doBuffer();
-      }
-      return this.tokens;
-    },
-    getAllIf : function(fn){
-      return List.filter(this.getAll(), function(token){
-	return fn(token);
-      });
     },
     getTokenCount : function(){
       return this.tokens.length;
@@ -5683,6 +5589,17 @@ var TokenStream = (function(){
     getSeekPercent : function(){
       var seek_pos = this.getSeekPos();
       return this.lexer.getSeekPercent(seek_pos);
+    },
+    getAll : function(){
+      while(!this.eof){
+	this._doBuffer();
+      }
+      return this.tokens;
+    },
+    getAllIf : function(fn){
+      return List.filter(this.getAll(), function(token){
+	return fn(token);
+      });
     },
     getWhile : function(fn){
       var ret = [], token;
@@ -5697,77 +5614,23 @@ var TokenStream = (function(){
       }
       return ret;
     },
-    // iterate while fn(pos, token) returns true.
-    // so loop is false break
-    iterWhile : function(start_pos, fn){
-      var ptr = (arguments.length == 1)? this.pos : start_pos;
-      while(ptr >= 0){
-	if(ptr >= this.tokens.length){
-	  if(this.eof){
-	    break;
-	  }
-	  this._doBuffer();
-	  this.iterWhile(ptr, fn);
+    skipUntil : function(fn){
+      while(this.hasNext()){
+	var token = this.get();
+	if(token === null){
 	  break;
 	}
-	if(!fn(ptr, this.tokens[ptr])){
+	if(!fn(token)){
+	  this.prev();
 	  break;
 	}
-	ptr++;
       }
     },
-    // reverse iterate while fn(pos, token) returns true.
-    // so loop is false break
-    revIterWhile : function(start_pos, fn){
-      var ptr = (arguments.length == 1)? this.pos : start_pos;
-      while(ptr >= 0){
-	if(!fn(ptr, this.tokens[ptr])){
-	  break;
-	}
-	ptr--;
-      }
-    },
-    findTextPrev : function(start_p){
-      var start_pos = (typeof start_p != "undefined")? start_p : this.pos;
-      var text = null;
-      this.revIterWhile(start_pos - 1, function(pos, token){
-	if(token){
-	  if(!Token.isText(token)){
-            // blocked by recursive inline element.
-            // TODO: get tail element of recursive inline element.
-            return false;
-	  }
-	  text = token;
-	  return false; // break
-	}
-	return false; // break
-      });
-      return text;
-    },
-    findTextNext : function(start_p){
-      var start_pos = (typeof start_p != "undefined")? start_p : this.pos;
-      var text = null;
-      this.iterWhile(start_pos + 1, function(pos, token){
-	if(token){
-	  if(!Token.isText(token)){
-            // blocked by recursive inline element.
-            // TODO: get tail element of recursive inline element.
-            return false;
-	  }
-	  text = token;
-	  return false; // break
-	}
-	return false; // break
-      });
-      return text;
+    _createLexer : function(src){
+      return new HtmlLexer(src);
     },
     _doBuffer : function(){
       var buff_len = Config.lexingBufferLen;
-      /*
-      var self = this;
-      var push = function(token){
-	self.tokens.push(token);
-      };*/
       for(var i = 0; i < buff_len; i++){
 	var token = this.lexer.get();
 	if(token === null){
@@ -5775,7 +5638,6 @@ var TokenStream = (function(){
 	  break;
 	}
 	this.tokens.push(token);
-	//push(token);
       }
     }
   };
@@ -7522,8 +7384,7 @@ var LayoutGenerator = (function(){
   }
 
   // 1. create child layout context from parent layout context.
-  // 2. call 'layout' callback defined in style-context if exists.
-  // 3. return _yield that is implemented by child class.
+  // 2. call _yield implemented in inherited class.
   LayoutGenerator.prototype.yield = function(parent_context){
     var context = parent_context? this._createChildContext(parent_context) : this._createStartContext();
     return this._yield(context);
@@ -7715,6 +7576,11 @@ var BlockGenerator = (function(){
     // if inline text or child inline or inline-block,
     // push back stream and delegate current style and stream to InlineGenerator
     if(Token.isText(token) || child_style.isInline() || child_style.isInlineBlock()){
+      // skip new-line token in block level.
+      if(Token.isNewLine(token)){
+	this.stream.skipUntil(Token.isNewLine)
+	return this._getNext(context);
+      }
       this.stream.prev();
 
       // outline context is required when inline generator yields 'inline-block'.
@@ -8011,10 +7877,13 @@ var InlineGenerator = (function(){
 
   InlineGenerator.prototype._getText = function(context, token){
     // new-line
-    if(token instanceof Char && token.isNewLineChar()){
+    if(Token.isNewLine(token)){
       if(this.style.isPre()){
 	return null; // break line at new-line char.
       }
+      // if not pre, skip continuous new-line
+      this.stream.skipUntil(Token.isNewLine);
+      return this._getNext(context);
     }
     if(!token.hasMetrics()){
       // if charactor token, set kerning before setting metrics.
