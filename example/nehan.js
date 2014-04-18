@@ -41,7 +41,7 @@ var Config = {
   debug:false,
   kerning:true,
   justify:true,
-  maxRollbackCount : 100,
+  maxRollbackCount : 40,
   minBlockScaleDownRate : 65,
   useVerticalGlyphIfEnable: true,
   useStrictWordMetrics: true,
@@ -2637,6 +2637,9 @@ var Token = {
   },
   isNewLine : function(token){
     return token instanceof Char && token.isNewLineChar();
+  },
+  isWhiteSpace : function(token){
+    return token instanceof Char && token.isWhiteSpaceChar();
   }
 };
 
@@ -2939,6 +2942,12 @@ var Char = (function(){
     },
     isNewLineChar : function(){
       return this.data === "\n";
+    },
+    isSpaceChar : function(){
+      return this.data === " " || this.data === "&nbsp;" || this.data === "\u3000" || this.data === "\t";
+    },
+    isWhiteSpaceChar : function(){
+      return this.isNewLineChar() || this.isSpaceChar();
     },
     isImgChar : function(){
       return (typeof this.img != "undefined");
@@ -4602,7 +4611,7 @@ var TextEmpha = (function(){
 
 var Uri = (function(){
   function Uri(address){
-    this.address = this._normalize(address);
+    this.address = this._normalize(address || "");
   }
 
   Uri.prototype = {
@@ -5754,7 +5763,6 @@ var Page = (function(){
   function Page(opt){
     Args.merge(this, {
       html:"",
-      groupLength:1,
       seekPos:0,
       pageNo:0,
       charPos:0,
@@ -5764,34 +5772,17 @@ var Page = (function(){
   }
 
   Page.prototype = {
-    isGroup : function(){
-      return this.groupLength > 1;
-    },
-    getPercent : function(){
-      return this.percent;
-    },
-    getPageNo : function(){
-      return this.pageNo;
-    },
-    getGroupCount : function(){
-      return this.groupLength;
-    },
-    getPageCount : function(){
-      if(this.isGroup() && this.html instanceof Array){
-	return this.html.length;
-      }
+    getGroupSize : function(){
       return 1;
     },
-    getHtml : function(pos){
-      if(this.isGroup()){
-	return this.html[pos] || "";
-      }
+    getGroupHtml : function(pos){
       return this.html;
     }
   };
 
   return Page;
 })();
+
 
 var PageEvaluator = (function(){
   function PageEvaluator(){
@@ -5810,7 +5801,7 @@ var PageEvaluator = (function(){
 	pageNo:body_element.pageNo,
 	charPos:body_element.charPos,
 	charCount:body_element.charCount
-      }) : {};
+      }) : null;
     }
   };
 
@@ -5819,40 +5810,28 @@ var PageEvaluator = (function(){
 
 
 var PageGroupEvaluator = (function(){
-  function PageGroupEvaluator(){
-    this.evaluator = new LayoutEvaluator();
+  function PageGroupEvaluator(group_size){
+    this.groupSize = group_size;
+    PageEvaluator.call(this);
   }
+  Class.extend(PageGroupEvaluator, PageEvaluator);
 
-  PageGroupEvaluator.prototype = {
-    evaluate : function(page_group){
-      var self = this;
-      var char_count = 0;
-      var html = [];
-      var results = List.map(page_group.getPages(), function(body_element){
-	var ret = self.evaluator.evaluate(body_element);
-	char_count += ret.charCount;
-	html.push(ret.html);
-	return ret;
-      });
-      var first = results[0];
-      return new Page({
-	html:html,
-	groupLength:page_group.getSize(),
-	percent:first.percent,
-	seekPos:first.seekPos,
-	pageNo:first.pageNo,
-	charPos:first.charPos,
-	charCount:char_count
-      });
-    }
+  // [tree] -> PageGroup
+  PageGroupEvaluator.prototype.evaluate = function(trees){
+    var self = this;
+    var pages = List.map(trees, function(tree){
+      return PageEvaluator.prototype.evaluate.call(self, tree);
+    });
+    return new PageGroup(this.groupSize, pages);
   };
 
   return PageGroupEvaluator;
 })();
 
 var PageStream = (function(){
-  function PageStream(text){
+  function PageStream(text, group_size){
     this.text = this._createSource(text);
+    this.groupSize = group_size;
     this.generator = this._createGenerator(this.text);
     this.evaluator = this._createEvaluator();
     this.buffer = [];
@@ -5908,16 +5887,20 @@ var PageStream = (function(){
     // int -> Page
     getPage : function(page_no){
       var entry = this.buffer[page_no];
-      if(entry instanceof Page){ // already evaluated.
-	return entry;
+      if(this._isEvaluated(entry)){
+	return entry; // already evaluated
       }
       // if still not evaluated, eval and get EvalResult
       var result = this.evaluator.evaluate(entry);
       this.buffer[page_no] = result; // over write buffer entry by result.
       return result;
     },
+    // () -> tree
     _yield : function(){
       return this.generator.yield();
+    },
+    _isEvaluated : function(entry){
+      return (entry instanceof Page);
     },
     _setTimeStart : function(){
       this._timeStart = (new Date()).getTime();
@@ -5978,48 +5961,27 @@ var PageStream = (function(){
 
 
 var PageGroup = (function(){
-  function PageGroup(size){
-    this.trees = [];
-    this.size = size;
+  function PageGroup(group_size, pages){
+    var first = pages[0];
+    Page.call(this, {
+      percent:first.percent,
+      pageNo:first.pageNo,
+      seekPos:first.seekPos,
+      charPos:first.charPos,
+      charCount:List.sum(pages, function(page){ return page.charCount; })
+    });
+    this.groupSize = group_size;
+    this.pages = pages;
   }
+  Class.extend(PageGroup, Page);
 
-  PageGroup.prototype = {
-    add : function(tree){
-      if(this.isComplete()){
-	throw "overflow";
-      }
-      this.trees.push(tree);
-    },
-    commit : function(){
-      var first = this.getFirst();
-      this.percent = first.percent;
-      this.seekPos = first.seekPos;
-      this.pageNo = first.pageNo;
-    },
-    isEmpty : function(){
-      return this.trees.length === 0;
-    },
-    isComplete : function(){
-      return this.trees.length >= this.size;
-    },
-    getFirst : function(){
-      return this.trees[0];
-    },
-    getLast : function(){
-      return this.trees[this.trees.length - 1];
-    },
-    get : function(pos){
-      return this.trees[pos];
-    },
-    getPages : function(){
-      return this.trees;
-    },
-    getSize : function(){
-      return this.size;
-    },
-    getLength : function(){
-      return this.trees.length;
-    }
+  PageGroup.prototype.getGroupSize = function(){
+    return this.groupSize;
+  };
+
+  PageGroup.prototype.getGroupHtml = function(pos){
+    var page = this.pages[pos] || null;
+    return page? page.html : "";
   };
 
   return PageGroup;
@@ -6027,8 +5989,7 @@ var PageGroup = (function(){
 
 var PageGroupStream = (function(){
   function PageGroupStream(text, group_size){
-    PageStream.call(this, text);
-    this.groupSize = group_size;
+    PageStream.call(this, text, group_size);
   }
   Class.extend(PageGroupStream, PageStream);
   
@@ -6039,23 +6000,25 @@ var PageGroupStream = (function(){
     return Math.round(cell_page_no / this.groupSize);
   };
 
+  // () -> [tree]
   PageGroupStream.prototype._yield = function(){
-    var group = new PageGroup(this.groupSize);
-    var add = function(page){
-      group.add(page);
-    };
-    for(var i = 0; i < this.groupSize; i++){
-      if(!this.generator.hasNext()){
-	break;
+    var trees = [], push = function(tree){
+      if(tree){
+	trees.push(tree);
       }
-      add(this.generator.yield());
+    };
+    while(trees.length < this.groupSize && this.hasNext()){
+      push(this.generator.yield());
     }
-    group.commit();
-    return group;
+    return trees;
+  };
+
+  PageGroupStream.prototype._isEvaluated = function(entry){
+    return (entry instanceof PageGroup);
   };
 
   PageGroupStream.prototype._createEvaluator = function(){
-    return new PageGroupEvaluator();
+    return new PageGroupEvaluator(this.groupSize);
   };
 
   return PageGroupStream;
@@ -6396,8 +6359,8 @@ var StyleContext = (function(){
       return box;
     },
     createImage : function(){
-      var measure = this.contentMeasure;
-      var extent = this.contentExtent;
+      var measure = this.staticMeasure || this.font.size;
+      var extent = this.staticExtent || this.font.size;
 
       // image size always considered as horizontal mode.
       var image_size = BoxFlows.getByName("lr-tb").getBoxSize(measure, extent);
@@ -6661,14 +6624,6 @@ var StyleContext = (function(){
     },
     getColor : function(){
       return this.color || Layout.fontColor;
-    },
-    getOrphansCount : function(){
-      // orphans count only enabled to child block element.
-      if(this.isRoot()){
-	return 0;
-      }
-      var count = this.getCssAttr("orphans");
-      return count? parseInt(count, 10) : 0;
     },
     getChildCount : function(){
       return this.childs.length;
@@ -7536,7 +7491,7 @@ var BlockGenerator = (function(){
     if(!context.isBlockSpaceLeft()){
       return null;
     }
-    while(true){
+    while(this.hasNext()){
       var element = this._getNext(context);
       if(element === null){
 	break;
@@ -7576,9 +7531,9 @@ var BlockGenerator = (function(){
     // if inline text or child inline or inline-block,
     // push back stream and delegate current style and stream to InlineGenerator
     if(Token.isText(token) || child_style.isInline() || child_style.isInlineBlock()){
-      // skip new-line token in block level.
-      if(Token.isNewLine(token)){
-	this.stream.skipUntil(Token.isNewLine)
+      // skip while-space token in block level.
+      if(Token.isWhiteSpace(token)){
+	this.stream.skipUntil(Token.isWhiteSpace);
 	return this._getNext(context);
       }
       this.stream.prev();
@@ -7689,17 +7644,9 @@ var BlockGenerator = (function(){
     } else {
       context.addBlockElement(element, extent);
     }
-    this._onAddElement(element);
-  };
 
-  var count_line = function(elements){
-    var callee = arguments.callee;
-    return List.fold(elements, 0, function(ret, element){
-      if(element === null){
-	return ret;
-      }
-      return (element.display === "inline")? ret + 1 : ret + callee(element.elements);
-    });
+    // call _onAddElement callback for each 'element' of output.
+    this._onAddElement(element);
   };
 
   BlockGenerator.prototype._createOutput = function(context){
@@ -7713,13 +7660,10 @@ var BlockGenerator = (function(){
       elements:elements
     });
 
-    // if orphans available, and line count is less than it, cache and page-break temporally.
-    var orphans_count = this.style.getOrphansCount();
-    if(orphans_count > 0 && count_line(block.elements) < orphans_count && this.hasNext()){
-      this.pushCache(block);
-      return null; // temporary page-break;
-    }
+    // call _onCreate callback for 'each' output
     this._onCreate(block);
+
+    // call _onComplete callback for 'final' output
     if(!this.hasNext()){
       this._onComplete(block);
     }
@@ -7741,7 +7685,7 @@ var InlineGenerator = (function(){
     if(!context.isInlineSpaceLeft()){
       return null;
     }
-    while(true){
+    while(this.hasNext()){
       var element = this._getNext(context);
       if(element === null){
 	break;
@@ -7785,7 +7729,11 @@ var InlineGenerator = (function(){
       texts:context.getInlineTexts(), // elements but text element only.
       charCount:context.getInlineCharCount()
     });
+
+    // call _onCreate callback for 'each' output
     this._onCreate(line);
+
+    // call _onComplete callback for 'final' output
     if(!this.hasNext()){
       this._onComplete(line);
     }
@@ -7793,7 +7741,8 @@ var InlineGenerator = (function(){
   };
 
   InlineGenerator.prototype._justifyLine = function(context){
-    var next_head = this.peekLastCache(); // by stream.getToken(), stream pos has been moved to next pos already, so cur pos is the next head.
+    // by stream.getToken(), stream pos has been moved to next pos already, so cur pos is the next head.
+    var next_head = this.peekLastCache() || this.stream.peek();
     var new_tail = context.justify(next_head); // if justify is occured, new_tail token is gained.
     if(new_tail){
       this.stream.setPos(new_tail.pos + 1); // new stream pos is next pos of new tail.
@@ -7820,6 +7769,7 @@ var InlineGenerator = (function(){
     if(Token.isText(token)){
       // if tcy, wrap all content and return Tcy object and force generator terminate.
       if(this.style.getTextCombine() === "horizontal"){
+	this.setTerminate(true);
 	var tcy = new Tcy(this.style.getMarkupContent());
 	return this._getText(context, tcy);
       }
@@ -7942,6 +7892,8 @@ var InlineGenerator = (function(){
 
   InlineGenerator.prototype._addElement = function(context, element, measure){
     context.addInlineElement(element, measure);
+
+    // call _onAddElement callback for each 'element' of output.
     this._onAddElement(element);
   };
 
@@ -8405,12 +8357,15 @@ var ListGenerator = (function(){
   }
   Class.extend(ListGenerator, BlockGenerator);
 
+  // before yield list layout, we have to calclate max marker size by total child_count(item_count).
   ListGenerator.prototype._getMarkerSize = function(item_count){
-    var max_marker_text = this.style.getMarkerHtml(item_count);
-    var gen = new InlineGenerator(this.style, new TokenStream(max_marker_text));
-    var line = gen.yield();
-    var marker_measure = line.inlineMeasure + Math.floor(this.style.getFontSize() / 2);
-    var marker_extent = line.size.getExtent(this.style.flow);
+    var max_marker_html = this.style.getMarkerHtml(item_count);
+    // create temporary inilne-generator but using clone style, this is because sometimes marker html includes "<span>" element,
+    // and we have to avoid 'appendChild' from child-generator of this tmp generator.
+    var tmp_gen = new InlineGenerator(this.style.clone(), new TokenStream(max_marker_html));
+    var line = tmp_gen.yield();
+    var marker_measure = line? line.inlineMeasure + Math.floor(this.style.getFontSize() / 2) : this.style.getFontSize();
+    var marker_extent = line? line.size.getExtent(this.style.flow) : this.style.getFontSize();
     return this.style.flow.getBoxSize(marker_measure, marker_extent);
   };
 
@@ -9177,7 +9132,7 @@ return {
   documentContext: DocumentContext,
   createPageStream : function(text, group_size){
     group_size = Math.max(1, group_size || 1);
-    return (group_size === 1)? new PageStream(text) : new PageGroupStream(text, group_size);
+    return (group_size === 1)? new PageStream(text, 1) : new PageGroupStream(text, group_size);
   },
   getStyle : function(selector_key){
     return Selectors.getValue(selector_key);
