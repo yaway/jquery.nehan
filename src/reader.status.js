@@ -18,6 +18,8 @@ var ReaderStatus = (function(){
     this.spacingSize = args.spacingSize || this.fontSize;
     this.useWheel = args.useWheel;
     this.useNombre = args.useNombre;
+    this.vertFontFamily = args.vertFontFamily;
+    this.horiFontFamily = args.horiFontFamily;
   }
 
   ReaderStatus.prototype = {

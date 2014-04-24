@@ -378,6 +378,8 @@ var ReaderStatus = (function(){
     this.spacingSize = args.spacingSize || this.fontSize;
     this.useWheel = args.useWheel;
     this.useNombre = args.useNombre;
+    this.vertFontFamily = args.vertFontFamily;
+    this.horiFontFamily = args.horiFontFamily;
   }
 
   ReaderStatus.prototype = {
@@ -930,7 +932,9 @@ var Reader = (function(){
 	  vert:this.status.getVertDocumentMode(),
 	  fontSize:this.status.getFontSize(),
 	  width:this.status.getCellPageWidth(),
-	  height:this.status.getCellPageHeight()
+	  height:this.status.getCellPageHeight(),
+	  vertFontFamily:this.status.vertFontFamily,
+	  horiFontFamily:this.status.horiFontFamily
 	}
       });
       this.onCreateEngine(engine);
@@ -1014,8 +1018,7 @@ Nehan.Reader.version = "1.0.3";
 	  height:opt.height,
 	  fontSize:opt.fontSize,
 	  vertFontFamily:opt.vertFontFamily,
-	  horiFontFamily:opt.horiFontFamily,
-	  markerFontFamily:opt.markerFontFamily
+	  horiFontFamily:opt.horiFontFamily
 	}
       });
 
@@ -1105,9 +1108,6 @@ Nehan.Reader.version = "1.0.3";
 
     // font-family used for horizontal text line.
     horiFontFamily:"'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace",
-
-    // font-family used for marker parts of ul, ol.
-    markerFontFamily:"'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace",
 
     // row count of screen division. 1 or 2 available.
     rowCount:1,

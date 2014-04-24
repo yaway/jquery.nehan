@@ -30,8 +30,7 @@
 	  height:opt.height,
 	  fontSize:opt.fontSize,
 	  vertFontFamily:opt.vertFontFamily,
-	  horiFontFamily:opt.horiFontFamily,
-	  markerFontFamily:opt.markerFontFamily
+	  horiFontFamily:opt.horiFontFamily
 	}
       });
 
@@ -121,9 +120,6 @@
 
     // font-family used for horizontal text line.
     horiFontFamily:"'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace",
-
-    // font-family used for marker parts of ul, ol.
-    markerFontFamily:"'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace",
 
     // row count of screen division. 1 or 2 available.
     rowCount:1,

@@ -234,7 +234,9 @@ var Reader = (function(){
 	  vert:this.status.getVertDocumentMode(),
 	  fontSize:this.status.getFontSize(),
 	  width:this.status.getCellPageWidth(),
-	  height:this.status.getCellPageHeight()
+	  height:this.status.getCellPageHeight(),
+	  vertFontFamily:this.status.vertFontFamily,
+	  horiFontFamily:this.status.horiFontFamily
 	}
       });
       this.onCreateEngine(engine);
