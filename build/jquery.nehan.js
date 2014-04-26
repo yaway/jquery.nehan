@@ -1017,8 +1017,7 @@ Nehan.Reader.version = "1.0.3";
 	  width:width,
 	  height:opt.height,
 	  fontSize:opt.fontSize,
-	  vertFontFamily:opt.vertFontFamily,
-	  horiFontFamily:opt.horiFontFamily
+	  fontFamily:opt.fontFamily
 	}
       });
 
@@ -1097,17 +1096,13 @@ Nehan.Reader.version = "1.0.3";
     // set 'hori' if you want horizontal layout.
     direction: "vert",
 
-    // document mode for direction "hori"
-    hori:"lr-tb",
+    // document mode for each direction
+    boxFlow:{
+      hori:"lr-tb", // "rl-tb" is not supported yet
+      vert:"tb-rl" // or "tb-lr" is supported
+    },
 
-    // document mode for direction "vert"
-    vert:"tb-rl", // or "tb-lr" is supported
-
-    // font-family used for vertical text line.
-    vertFontFamily:"'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro','HiraMinProN-W3','IPA明朝','IPA Mincho', 'Meiryo','メイリオ','ＭＳ 明朝','MS Mincho', monospace",
-
-    // font-family used for horizontal text line.
-    horiFontFamily:"'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace",
+    fontFamily:"'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro','HiraMinProN-W3','IPA明朝','IPA Mincho', 'Meiryo','メイリオ','ＭＳ 明朝','MS Mincho', monospace",
 
     // row count of screen division. 1 or 2 available.
     rowCount:1,
