@@ -143,22 +143,6 @@ $(".my-nehan-document").nehan({
 
 	<hr />
 
-	<h3>hori : String</h3>
-	<p>Document mode when <code>direction</code> property is assigned to "hori".</p>
-	<p>Only "lr-tb" is supported.</p>
-	<p>Notice that "lr" means inline-text flows from <strong>left to right</strong>, and "tb" means block level line flows from <strong>top to bottom</strong>.</p>
-
-	<hr />
-
-	<h3>vert : String</h3>
-	<p>Document mode when <code>direction</code> property is assigned to "vert".</p>
-	<p>Both "tb-rl" and "tb-lr" are supported.</p>
-	<p>Notice that "tb" means inline-text flows from <strong>top to bottom</strong>,
-	  and "rl" means block level line flows from <strong>right to left</strong>,
-	  and "lr" means <strong>left to right</strong>.</p>
-
-	<hr />
-
 	<h3>fontSize : Integer</h3>
 	<p>Define basic font size in px size.</p>
 
@@ -182,8 +166,6 @@ $(".my-nehan-document").nehan({
 $(".my-nehan-document").nehan({
   text:"not from dom text, but direct text",
   direction:"hori", // or "vert"
-  hori:"lr-tb", // "rl-tb" is not supported.
-  vert:"tb-rl", // or "tb-rl"
   fontSize:16,
   width: 640,
   height: 480
@@ -192,15 +174,8 @@ $(".my-nehan-document").nehan({
 
 	<hr />
 
-	<h3>vertFontFamily : String</h3>
-	<p>font-famiy in vertical mode.</p>
+	<h3>fontFamily : String</h3>
 	<p>Default value is "'ヒラギノ明朝 Pro W3','Hiragino Mincho Pro','HiraMinProN-W3','IPA明朝','IPA Mincho', 'Meiryo','メイリオ','ＭＳ 明朝','MS Mincho', monospace".</p>
-
-	<hr />
-
-	<h3>horiFontFamily : String</h3>
-	<p>font-famiy in horizontal mode.</p>
-	<p>Default value is "'Meiryo','メイリオ','Hiragino Kaku Gothic Pro','ヒラギノ角ゴ Pro W3','Osaka','ＭＳ Ｐゴシック', monospace".</p>
 
 	<hr />
 
