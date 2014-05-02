@@ -41,10 +41,8 @@
 
       stream.asyncGet({
 	onProgress:function(stream, tree){
-	  var page_node = document.createElement("div");
 	  var page = stream.getPage(tree.pageNo);
-	  page_node.innerHTML = page.html;
-	  $target.append(page_node);
+	  $target.append(page.element);
 	}
       });
     };

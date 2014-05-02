@@ -9,7 +9,7 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // screen
-    "<div style='margin:{{space}}px'>{{0}}</div>",
+    "<div id='cell-0' style='margin:{{space}}px'></div>",
 
     "<div class='nehan-reader-clearfix'></div>"
   ].join(""),
@@ -25,8 +25,7 @@ var Themes = {
 
     // left
     "<div class='nehan-reader-left'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -35,8 +34,7 @@ var Themes = {
 
     // right
     "<div class='nehan-reader-right'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -55,13 +53,11 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
     "</div>",
 
     // downside
-    "<div class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>"
@@ -80,13 +76,11 @@ var Themes = {
     "<div class='nehan-reader-left'>",
 
     // left upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{2}}",
+    "<div id='cell-2' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // left downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{3}}",
+    "<div id='cell-3' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -97,13 +91,11 @@ var Themes = {
     "<div class='nehan-reader-right'>",
 
     // right upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // right downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -126,7 +118,7 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // screen
-    "<div style='margin:{{space}}px'>{{0}}</div>",
+    "<div id='cell-0' style='margin:{{space}}px'></div>",
 
     "<div class='nehan-reader-clearfix'></div>",
 
@@ -149,8 +141,7 @@ var Themes = {
 
     // left
     "<div class='nehan-reader-left'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -163,8 +154,7 @@ var Themes = {
 
     // right
     "<div class='nehan-reader-right'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -190,13 +180,11 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
     "</div>",
 
     // downside
-    "<div class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -223,13 +211,11 @@ var Themes = {
     "<div class='nehan-reader-left'>",
 
     // left upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{2}}",
+    "<div id='cell-2' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // left downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{3}}",
+    "<div id='cell-3' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -244,13 +230,11 @@ var Themes = {
     "<div class='nehan-reader-right'>",
 
     // right upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // right downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",

@@ -3,7 +3,6 @@ var ReaderStatus = (function(){
     this.pageNo = 0;
     this.pageCount = 0;
     this.progress = 0;
-    this.screenCache = [];
     this.direction = args.direction || "vert";
     this.horiMode = args.hori || "lr-tb";
     this.vertMode = args.vert || "tb-rl";
@@ -48,9 +47,6 @@ var ReaderStatus = (function(){
       }
       return false;
     },
-    addScreenCache : function(cache){
-      this.screenCache.push(cache);
-    },
     setPageCount : function(page_count){
       this.pageCount = page_count;
     },
@@ -86,9 +82,6 @@ var ReaderStatus = (function(){
     },
     getPageCount : function(){
       return this.pageCount;
-    },
-    getScreenCache : function(page_no){
-      return this.screenCache[page_no] || "";
     },
     getDirection : function(){
       return this.direction;

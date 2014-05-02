@@ -34,7 +34,6 @@ var Reader = (function(){
 	this.writePage(page_no+1);
       } else if(this.stream.hasNext()){ // still not calclated and stream has next.
 	var page_result = this._getNextPage();
-	this._cacheResult(page_result);
 	this.writePage(page_no+1);
       }
     },
@@ -123,7 +122,6 @@ var Reader = (function(){
     },
     _startSeqAccessStream : function(){
       var first_page = this._getNextPage();
-      this._cacheResult(first_page);
       this.writePage(0);
       this.onReadyPage(this);
     },
@@ -134,8 +132,7 @@ var Reader = (function(){
 	  self._onComplete(time);
 	},
 	onProgress : function(stream, tree){
-	  var page = stream.getPage(tree.pageNo);
-	  self._onProgress(page);
+	  self._onProgress(tree);
 	},
 	onError : function(stream){
 	  self._onError(caller);
@@ -160,11 +157,12 @@ var Reader = (function(){
       this.onComplete(this);
     },
     _onProgress : function(page){
-      this.status.setPageCount(page.pageNo + 1);
-      this._cacheResult(page);
+      var tree = (page instanceof Array)? page[0] : page;
+      var page_no = Math.floor(tree.pageNo / this.status.getCellCount());
+      this.status.setPageCount(page_no + 1);
       this.pager.updatePageCount();
 
-      if(page.pageNo === 0){
+      if(page_no === 0){
 	this.writePage(0);
 	this.onReadyPage(this);
       }
@@ -172,31 +170,29 @@ var Reader = (function(){
     _onError : function(stream){
       this.onError(stream);
     },
-    _cacheResult : function(page){
-      var html = this._outputScreenHtml(page);
-      this.status.addScreenCache({
-	html:html,
-	result:page
-      });
-    },
     _updateScreen : function(){
       var self = this;
       var page_no = this.status.getPageNo();
       if(page_no < 0){
 	return;
       }
-      var cache = this.status.getScreenCache(page_no);
-      var percent = cache.result.percent;
+      var page = this.stream.getPage(page_no);
+      var percent = page.percent;
       if(!this.stream.hasNext() && !this.stream.hasPage(page_no+1)){
 	percent = 100;
       }
       this.status.setProgress(percent);
-      this.screenNode.innerHTML = cache.html;
+      this.screenNode.innerHTML = this._outputScreenHtml(page);
       this.pager.updatePageNo();
       this.pager.updateProgress();
       if(this.status.getPageCount() != this.stream.getPageCount()){
 	this.status.setPageCount(this.stream.getPageCount());
 	this.pager.updatePageCount();
+      }
+      var cell_order = this.status.getCellOrder();
+      var $screen = $(this.screenNode);
+      for(var i = 0; i < page.getGroupSize(); i++){
+	$screen.find("#cell-" + cell_order[i]).empty().append(page.getGroup(i));
       }
       $(".nehan-anchor-link").click(function(){
 	var anchor_name = $(this).attr("href").substring(1); // cut "#"
@@ -206,7 +202,6 @@ var Reader = (function(){
     },
     _outputScreenHtml : function(page){
       var page_no = page.pageNo;
-      var cell_order = this.status.getCellOrder();
       var facing_page_order = this.status.getFacingPageOrder(page_no);
 
       this.template.clearValues();
@@ -218,10 +213,6 @@ var Reader = (function(){
       this.template.setValue("page_no", page_no + 1);
       this.template.setValue("right_page_no", facing_page_order.right);
       this.template.setValue("left_page_no", facing_page_order.left);
-
-      for(var i = 0; i < page.getGroupSize(); i++){
-	this.template.setValue(cell_order[i], page.getGroupHtml(i));
-      }
 
       return this.template.render();
     },
@@ -251,14 +242,11 @@ var Reader = (function(){
       var source = Themes[name] || "";
       return new Template(source);
     },
-    _createScreenNode : function(html){
+    _createScreenNode : function(){
       var page = document.createElement("div");
       page.className = "nehan-reader-screen";
       page.style.width = this.status.getScreenWidth() + "px";
       page.style.height = this.status.getScreenHeight() + "px";
-      if(html){
-	page.innerHTML = html;
-      }
       return page;
     },
     _createPager : function(){

@@ -68,7 +68,7 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // screen
-    "<div style='margin:{{space}}px'>{{0}}</div>",
+    "<div id='cell-0' style='margin:{{space}}px'></div>",
 
     "<div class='nehan-reader-clearfix'></div>"
   ].join(""),
@@ -84,8 +84,7 @@ var Themes = {
 
     // left
     "<div class='nehan-reader-left'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -94,8 +93,7 @@ var Themes = {
 
     // right
     "<div class='nehan-reader-right'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -114,13 +112,11 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
     "</div>",
 
     // downside
-    "<div class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>"
@@ -139,13 +135,11 @@ var Themes = {
     "<div class='nehan-reader-left'>",
 
     // left upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{2}}",
+    "<div id='cell-2' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // left downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{3}}",
+    "<div id='cell-3' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -156,13 +150,11 @@ var Themes = {
     "<div class='nehan-reader-right'>",
 
     // right upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // right downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -185,7 +177,7 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // screen
-    "<div style='margin:{{space}}px'>{{0}}</div>",
+    "<div id='cell-0' style='margin:{{space}}px'></div>",
 
     "<div class='nehan-reader-clearfix'></div>",
 
@@ -208,8 +200,7 @@ var Themes = {
 
     // left
     "<div class='nehan-reader-left'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -222,8 +213,7 @@ var Themes = {
 
     // right
     "<div class='nehan-reader-right'>",
-    "<div style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -249,13 +239,11 @@ var Themes = {
     "<a href='#' name='{{page_pos}}'></a>",
 
     // upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-bottom:{{space}}px;'>",
     "</div>",
 
     // downside
-    "<div class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row nehan-reader-row-bottom' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -282,13 +270,11 @@ var Themes = {
     "<div class='nehan-reader-left'>",
 
     // left upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{2}}",
+    "<div id='cell-2' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // left downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
-    "{{3}}",
+    "<div id='cell-3' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-left:{{space}}px; padding-right:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -303,13 +289,11 @@ var Themes = {
     "<div class='nehan-reader-right'>",
 
     // right upside
-    "<div class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
-    "{{0}}",
+    "<div id='cell-0' class='nehan-reader-row nehan-reader-row-top' style='width:{{cell_width}}px; height:{{cell_height}}px; margin-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px; padding-bottom:{{space}}px'>",
     "</div>",
 
     // right downside
-    "<div class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
-    "{{1}}",
+    "<div id='cell-1' class='nehan-reader-row' style='height:{{cell_height}}px; padding-top:{{space}}px; margin-right:{{space}}px; padding-left:{{space}}px;'>",
     "</div>",
 
     "<div class='nehan-reader-clearfix'></div>",
@@ -363,7 +347,6 @@ var ReaderStatus = (function(){
     this.pageNo = 0;
     this.pageCount = 0;
     this.progress = 0;
-    this.screenCache = [];
     this.direction = args.direction || "vert";
     this.horiMode = args.hori || "lr-tb";
     this.vertMode = args.vert || "tb-rl";
@@ -408,9 +391,6 @@ var ReaderStatus = (function(){
       }
       return false;
     },
-    addScreenCache : function(cache){
-      this.screenCache.push(cache);
-    },
     setPageCount : function(page_count){
       this.pageCount = page_count;
     },
@@ -446,9 +426,6 @@ var ReaderStatus = (function(){
     },
     getPageCount : function(){
       return this.pageCount;
-    },
-    getScreenCache : function(page_no){
-      return this.screenCache[page_no] || "";
     },
     getDirection : function(){
       return this.direction;
@@ -732,7 +709,6 @@ var Reader = (function(){
 	this.writePage(page_no+1);
       } else if(this.stream.hasNext()){ // still not calclated and stream has next.
 	var page_result = this._getNextPage();
-	this._cacheResult(page_result);
 	this.writePage(page_no+1);
       }
     },
@@ -821,7 +797,6 @@ var Reader = (function(){
     },
     _startSeqAccessStream : function(){
       var first_page = this._getNextPage();
-      this._cacheResult(first_page);
       this.writePage(0);
       this.onReadyPage(this);
     },
@@ -832,8 +807,7 @@ var Reader = (function(){
 	  self._onComplete(time);
 	},
 	onProgress : function(stream, tree){
-	  var page = stream.getPage(tree.pageNo);
-	  self._onProgress(page);
+	  self._onProgress(tree);
 	},
 	onError : function(stream){
 	  self._onError(caller);
@@ -858,11 +832,12 @@ var Reader = (function(){
       this.onComplete(this);
     },
     _onProgress : function(page){
-      this.status.setPageCount(page.pageNo + 1);
-      this._cacheResult(page);
+      var tree = (page instanceof Array)? page[0] : page;
+      var page_no = Math.floor(tree.pageNo / this.status.getCellCount());
+      this.status.setPageCount(page_no + 1);
       this.pager.updatePageCount();
 
-      if(page.pageNo === 0){
+      if(page_no === 0){
 	this.writePage(0);
 	this.onReadyPage(this);
       }
@@ -870,31 +845,29 @@ var Reader = (function(){
     _onError : function(stream){
       this.onError(stream);
     },
-    _cacheResult : function(page){
-      var html = this._outputScreenHtml(page);
-      this.status.addScreenCache({
-	html:html,
-	result:page
-      });
-    },
     _updateScreen : function(){
       var self = this;
       var page_no = this.status.getPageNo();
       if(page_no < 0){
 	return;
       }
-      var cache = this.status.getScreenCache(page_no);
-      var percent = cache.result.percent;
+      var page = this.stream.getPage(page_no);
+      var percent = page.percent;
       if(!this.stream.hasNext() && !this.stream.hasPage(page_no+1)){
 	percent = 100;
       }
       this.status.setProgress(percent);
-      this.screenNode.innerHTML = cache.html;
+      this.screenNode.innerHTML = this._outputScreenHtml(page);
       this.pager.updatePageNo();
       this.pager.updateProgress();
       if(this.status.getPageCount() != this.stream.getPageCount()){
 	this.status.setPageCount(this.stream.getPageCount());
 	this.pager.updatePageCount();
+      }
+      var cell_order = this.status.getCellOrder();
+      var $screen = $(this.screenNode);
+      for(var i = 0; i < page.getGroupSize(); i++){
+	$screen.find("#cell-" + cell_order[i]).empty().append(page.getGroup(i));
       }
       $(".nehan-anchor-link").click(function(){
 	var anchor_name = $(this).attr("href").substring(1); // cut "#"
@@ -904,7 +877,6 @@ var Reader = (function(){
     },
     _outputScreenHtml : function(page){
       var page_no = page.pageNo;
-      var cell_order = this.status.getCellOrder();
       var facing_page_order = this.status.getFacingPageOrder(page_no);
 
       this.template.clearValues();
@@ -916,10 +888,6 @@ var Reader = (function(){
       this.template.setValue("page_no", page_no + 1);
       this.template.setValue("right_page_no", facing_page_order.right);
       this.template.setValue("left_page_no", facing_page_order.left);
-
-      for(var i = 0; i < page.getGroupSize(); i++){
-	this.template.setValue(cell_order[i], page.getGroupHtml(i));
-      }
 
       return this.template.render();
     },
@@ -949,14 +917,11 @@ var Reader = (function(){
       var source = Themes[name] || "";
       return new Template(source);
     },
-    _createScreenNode : function(html){
+    _createScreenNode : function(){
       var page = document.createElement("div");
       page.className = "nehan-reader-screen";
       page.style.width = this.status.getScreenWidth() + "px";
       page.style.height = this.status.getScreenHeight() + "px";
-      if(html){
-	page.innerHTML = html;
-      }
       return page;
     },
     _createPager : function(){
@@ -1029,10 +994,8 @@ Nehan.Reader.version = "1.0.3";
 
       stream.asyncGet({
 	onProgress:function(stream, tree){
-	  var page_node = document.createElement("div");
 	  var page = stream.getPage(tree.pageNo);
-	  page_node.innerHTML = page.html;
-	  $target.append(page_node);
+	  $target.append(page.element);
 	}
       });
     };
