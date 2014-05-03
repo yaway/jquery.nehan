@@ -714,7 +714,9 @@ var Reader = (function(){
     },
     writeAnchorPage : function(anchor_name){
       var page_no = this.engine.documentContext.getAnchorPageNo(anchor_name);
-      this.writePage(page_no);
+      if(page_no){
+	this.writePage(page_no);
+      }
     },
     getDirection : function(){
       return this.status.getDirection();
@@ -852,12 +854,7 @@ var Reader = (function(){
 	return;
       }
       var page = this.stream.getPage(page_no);
-      var percent = page.percent;
-      if(!this.stream.hasNext() && !this.stream.hasPage(page_no+1)){
-	percent = 100;
-      }
-      this.status.setProgress(percent);
-      this.screenNode.innerHTML = this._outputScreenHtml(page);
+      this.screenNode.innerHTML = this._outputScreenHtml(page_no);
       this.pager.updatePageNo();
       this.pager.updateProgress();
       if(this.status.getPageCount() != this.stream.getPageCount()){
@@ -875,8 +872,7 @@ var Reader = (function(){
 	return false;
       });
     },
-    _outputScreenHtml : function(page){
-      var page_no = page.pageNo;
+    _outputScreenHtml : function(page_no){
       var facing_page_order = this.status.getFacingPageOrder(page_no);
 
       this.template.clearValues();
